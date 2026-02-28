@@ -169,7 +169,7 @@
       <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
         <p class="text-xs text-blue-700 text-center">
           <i class="fas fa-info-circle mr-1"></i>
-          Hubungi sekolah untuk mendapatkan password. Demo: NIS 696, password 12345678
+          Hubungi sekolah untuk mendapatkan password. Demo: NIS 639, password 12345678
         </p>
       </div>
     </div>
@@ -403,7 +403,7 @@
     };
 
     // ==================== KONFIGURASI GOOGLE SHEETS ====================
-    // TODO: GANTI DENGAN API KEY ANDA (https://console.cloud.google.com/)
+    // ✅ API KEY ANDA (sudah benar)
     const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18"; 
     
     // ID Spreadsheet (ambil dari URL)
@@ -412,7 +412,7 @@
         HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs" // Hadist Arba'in
     };
 
-    // Nama sheet untuk setiap kelas
+    // Nama sheet untuk setiap kelas (sesuai dengan tab di spreadsheet)
     const SHEET_NAMES = {
         X: "X",
         XI: "XI", 
@@ -423,24 +423,17 @@
     let attendanceRecords = [];
     let currentStudent = null;
     let refreshInterval = null;
-    let hafalanData = {
-        quran: null,
-        hadist: null
-    };
 
     // ==================== FUNGSI TAB ====================
     function showHafalanTab(tabName) {
-        // Sembunyikan semua tab content
         document.getElementById('tabRingkasanContent').classList.add('hidden');
         document.getElementById('tabQuranContent').classList.add('hidden');
         document.getElementById('tabHadistContent').classList.add('hidden');
         
-        // Nonaktifkan semua tab button
         document.getElementById('tabRingkasan').classList.remove('active');
         document.getElementById('tabQuran').classList.remove('active');
         document.getElementById('tabHadist').classList.remove('active');
         
-        // Aktifkan tab yang dipilih
         if (tabName === 'ringkasan') {
             document.getElementById('tabRingkasanContent').classList.remove('hidden');
             document.getElementById('tabRingkasan').classList.add('active');
@@ -460,17 +453,18 @@
             const fullRange = `${sheetName}!${range}`;
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(fullRange)}?key=${GOOGLE_API_KEY}`;
             
-            console.log(`Fetching: ${fullRange}`);
+            console.log(`📡 Fetching: ${fullRange}`);
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                console.error(`❌ HTTP Error: ${response.status}`);
+                return null;
             }
             
             const data = await response.json();
             return data.values || [];
         } catch (error) {
-            console.error(`Error fetching ${sheetName}:`, error);
+            console.error(`❌ Error fetching ${sheetName}:`, error);
             return null;
         }
     }
@@ -486,16 +480,26 @@
         try {
             // Tentukan sheet berdasarkan kelas siswa
             let studentSheet = SHEET_NAMES.X;
-            if (currentStudent.kelas.startsWith('XI')) {
+            const kelas = currentStudent.kelas || '';
+            
+            if (kelas.startsWith('XI')) {
                 studentSheet = SHEET_NAMES.XI;
-            } else if (currentStudent.kelas.startsWith('XII')) {
+            } else if (kelas.startsWith('XII')) {
                 studentSheet = SHEET_NAMES.XII;
             }
+            
+            console.log(`📚 Kelas siswa: ${kelas}, menggunakan sheet: ${studentSheet}`);
 
+            // ✅ PERBAIKAN: Range lebih luas untuk Quran (sampai kolom Z)
+            const quranRange = "A:Z";
+            
+            // ✅ PERBAIKAN: Range untuk Hadist (sampai kolom terakhir)
+            const hadistRange = "A:AM";
+            
             // Fetch data dari kedua sheet sesuai kelas siswa
             const [quranData, hadistData] = await Promise.all([
-                fetchSheetData(SHEET_IDS.QURAN, studentSheet, "A:G"), // Kolom A-G (NIS, Nama, Juz, dll)
-                fetchSheetData(SHEET_IDS.HADIST, studentSheet, "A:AM") // Kolom A-AM (sampai Hadist 42)
+                fetchSheetData(SHEET_IDS.QURAN, studentSheet, quranRange),
+                fetchSheetData(SHEET_IDS.HADIST, studentSheet, hadistRange)
             ]);
 
             // Sembunyikan loading
@@ -504,23 +508,33 @@
             // ========== PROSES DATA QURAN ==========
             let quranFound = false;
             if (quranData && quranData.length > 1) {
-                const rows = quranData.slice(1); // Skip header
-                // Cari berdasarkan No. Induk (kolom B di sheet Quran)
-                const studentRow = rows.find(row => row[1]?.toString() === currentStudent.nis);
+                console.log(`📊 Data Quran (${studentSheet}): ${quranData.length} baris`);
+                
+                // Baris pertama adalah header
+                const rows = quranData.slice(1);
+                
+                // ✅ PERBAIKAN: Cari berdasarkan No. Induk (kolom B = index 1)
+                const studentRow = rows.find(row => {
+                    const nisSheet = row[1] ? row[1].toString().trim() : '';
+                    const nisStudent = currentStudent.nis ? currentStudent.nis.toString().trim() : '';
+                    return nisSheet === nisStudent;
+                });
                 
                 if (studentRow) {
                     quranFound = true;
-                    // Asumsi: Kolom C = Juz terakhir
-                    const juz = studentRow[2] || '0';
-                    const juzNumber = parseInt(juz) || 0;
+                    console.log(`✅ Siswa ditemukan di sheet Quran:`, studentRow);
+                    
+                    // ✅ PERBAIKAN: Progres ada di kolom F (index 5)
+                    const progres = studentRow[5] || '0';
+                    const juzNumber = parseInt(progres) || 0;
                     const progress = Math.min(100, (juzNumber / 30) * 100);
                     
-                    document.getElementById('quranJuz').textContent = `Juz ${juz}`;
-                    document.getElementById('quranDetail').textContent = `Juz ${juz}`;
+                    document.getElementById('quranJuz').textContent = `Juz ${juzNumber}`;
+                    document.getElementById('quranDetail').textContent = `Juz ${juzNumber}`;
                     document.getElementById('quranProgress').textContent = `${progress.toFixed(1)}%`;
                     document.getElementById('quranProgressBar').style.width = `${progress}%`;
                     
-                    // Detail Quran (untuk tab detail)
+                    // Detail Quran
                     let quranDetailHtml = '';
                     for (let i = 1; i <= 30; i++) {
                         const status = i <= juzNumber ? '✅' : '⭕';
@@ -532,7 +546,11 @@
                         `;
                     }
                     document.getElementById('quranDetailList').innerHTML = quranDetailHtml;
+                } else {
+                    console.log(`❌ Siswa dengan NIS ${currentStudent.nis} tidak ditemukan di sheet Quran`);
                 }
+            } else {
+                console.log(`⚠️ Data Quran kosong atau tidak ada`);
             }
 
             if (!quranFound) {
@@ -546,14 +564,22 @@
             // ========== PROSES DATA HADIST ==========
             let hadistFound = false;
             if (hadistData && hadistData.length > 1) {
-                const rows = hadistData.slice(1); // Skip header
-                // Cari berdasarkan No. Induk (kolom B di sheet Hadist)
-                const studentRow = rows.find(row => row[1]?.toString() === currentStudent.nis);
+                console.log(`📊 Data Hadist (${studentSheet}): ${hadistData.length} baris`);
+                
+                const rows = hadistData.slice(1);
+                
+                // ✅ PERBAIKAN: Cari berdasarkan No. Induk (kolom B = index 1)
+                const studentRow = rows.find(row => {
+                    const nisSheet = row[1] ? row[1].toString().trim() : '';
+                    const nisStudent = currentStudent.nis ? currentStudent.nis.toString().trim() : '';
+                    return nisSheet === nisStudent;
+                });
                 
                 if (studentRow) {
                     hadistFound = true;
+                    console.log(`✅ Siswa ditemukan di sheet Hadist:`, studentRow);
                     
-                    // Kolom F = Progres (jumlah hadist)
+                    // ✅ PERBAIKAN: Progres ada di kolom F (index 5)
                     const progres = studentRow[5] || '0';
                     const hadistCount = parseInt(progres) || 0;
                     const progressPercent = Math.min(100, (hadistCount / 42) * 100);
@@ -564,7 +590,7 @@
                     document.getElementById('hadistProgressBar').style.width = `${progressPercent}%`;
                     document.getElementById('hadistStats').textContent = `${hadistCount}/42`;
                     
-                    // Detail Hadist (kolom G sampai seterusnya)
+                    // ✅ PERBAIKAN: Detail Hadist dari kolom G (index 6) sampai seterusnya
                     let hadistDetailHtml = '';
                     for (let i = 1; i <= 42; i++) {
                         const colIndex = 6 + (i - 1); // Kolom G = index 6
@@ -573,12 +599,16 @@
                         
                         hadistDetailHtml += `
                             <div class="hadist-item ${isSelesai ? 'hadist-selesai' : 'hadist-belum'}">
-                                Hadist ${i}
+                                ${i}
                             </div>
                         `;
                     }
                     document.getElementById('hadistDetailList').innerHTML = hadistDetailHtml;
+                } else {
+                    console.log(`❌ Siswa dengan NIS ${currentStudent.nis} tidak ditemukan di sheet Hadist`);
                 }
+            } else {
+                console.log(`⚠️ Data Hadist kosong atau tidak ada`);
             }
 
             if (!hadistFound) {
@@ -594,7 +624,7 @@
             document.getElementById('hafalanContent').classList.remove('hidden');
 
         } catch (error) {
-            console.error('Error loading hafalan:', error);
+            console.error('❌ Error loading hafalan:', error);
             document.getElementById('hafalanLoading').classList.add('hidden');
             document.getElementById('hafalanErrorMessage').textContent = 'Gagal memuat data hafalan. Periksa koneksi atau API Key.';
             document.getElementById('hafalanError').classList.remove('hidden');
@@ -683,16 +713,18 @@
 
         await loadData();
 
-        const student = students.find(s => s.nis === nis);
+        // Cari siswa berdasarkan NIS (string)
+        const student = students.find(s => s.nis && s.nis.toString().trim() === nis);
+        
         if (!student) {
             showToast('NIS tidak ditemukan!', 'error');
             return;
         }
 
         currentStudent = student;
-        document.getElementById('studentName').textContent = student.nama;
-        document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
-        document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
+        document.getElementById('studentName').textContent = student.nama || '-';
+        document.getElementById('studentClass').textContent = `${student.kelas || '-'} - ${student.jurusan || '-'}`;
+        document.getElementById('studentNis').textContent = `NIS: ${student.nis || '-'}`;
         
         // Tampilkan foto jika ada
         const photoEl = document.getElementById('studentPhoto');
@@ -713,7 +745,7 @@
         loadAttendance();
         await loadHafalanProgress(); // Muat data hafalan
         startAutoRefresh();
-        showToast(`Selamat datang, ${student.nama}`, 'success');
+        showToast(`Selamat datang, ${student.nama || 'Siswa'}`, 'success');
     }
 
     function loadAttendance() {
@@ -723,11 +755,11 @@
         let filtered = attendanceRecords.filter(r => r.student_id === currentStudent.id);
         
         if (month) {
-            filtered = filtered.filter(r => r.tanggal.split('-')[1] === month);
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[1] === month);
         }
         
         if (year) {
-            filtered = filtered.filter(r => r.tanggal.split('-')[0] === year);
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[0] === year);
         }
 
         filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
