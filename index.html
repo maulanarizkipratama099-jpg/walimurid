@@ -35,15 +35,6 @@
     .toast-error { background: #ef4444; }
     .toast-info { background: #3b82f6; }
     
-    .student-photo {
-      width: 80px;
-      height: 80px;
-      border-radius: 16px;
-      object-fit: cover;
-      border: 3px solid white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    
     .status-badge {
       padding: 4px 8px;
       border-radius: 9999px;
@@ -71,6 +62,39 @@
     
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
+    }
+
+    /* Style untuk foto siswa */
+    .student-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .student-avatar-small {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #e5e7eb;
+    }
+
+    .photo-placeholder {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -112,13 +136,17 @@
   <!-- Dashboard Screen -->
   <div id="dashboardScreen" class="hidden p-4">
     <div class="max-w-4xl mx-auto">
-      <!-- Header with Photo -->
+      <!-- Header dengan Foto -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
         <div class="flex items-center gap-4">
-          <div id="studentPhotoContainer" class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg overflow-hidden">
-            <img id="studentPhoto" src="" alt="Foto Siswa" class="w-full h-full object-cover hidden">
-            <i id="studentPhotoIcon" class="fas fa-child text-3xl"></i>
+          <!-- Foto Siswa -->
+          <div id="studentPhotoContainer" class="relative">
+            <img id="studentPhoto" src="" alt="Foto Siswa" class="student-avatar hidden">
+            <div id="photoPlaceholder" class="photo-placeholder">
+              <span id="initialName"></span>
+            </div>
           </div>
+          
           <div class="flex-1">
             <h2 id="studentName" class="text-2xl font-bold"></h2>
             <p id="studentClass" class="text-white/80 text-sm"></p>
@@ -246,6 +274,12 @@
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
             if (currentStudent) {
+                // ✅ Update data student jika ada perubahan dari admin
+                const updatedStudent = students.find(s => s.id === currentStudent.id);
+                if (updatedStudent) {
+                    currentStudent = updatedStudent;
+                    updateStudentDisplay();
+                }
                 loadAttendance();
             }
         } catch (error) {
@@ -293,6 +327,35 @@
         });
     }
 
+    // ✅ FUNGSI UPDATE TAMPILAN SISWA (TERMASUK FOTO)
+    function updateStudentDisplay() {
+        if (!currentStudent) return;
+        
+        document.getElementById('studentName').textContent = currentStudent.nama;
+        document.getElementById('studentClass').textContent = `${currentStudent.kelas} - ${currentStudent.jurusan}`;
+        document.getElementById('studentNis').textContent = `NIS: ${currentStudent.nis}`;
+        
+        // ✅ TAMPILKAN FOTO JIKA ADA
+        const studentPhoto = document.getElementById('studentPhoto');
+        const photoPlaceholder = document.getElementById('photoPlaceholder');
+        const initialName = document.getElementById('initialName');
+        
+        if (currentStudent.photo) {
+            // Tampilkan foto
+            studentPhoto.src = currentStudent.photo;
+            studentPhoto.classList.remove('hidden');
+            photoPlaceholder.classList.add('hidden');
+        } else {
+            // Tampilkan placeholder dengan inisial
+            studentPhoto.classList.add('hidden');
+            photoPlaceholder.classList.remove('hidden');
+            
+            // Ambil huruf pertama dari nama
+            const initial = currentStudent.nama ? currentStudent.nama.charAt(0).toUpperCase() : '?';
+            initialName.textContent = initial;
+        }
+    }
+
     async function handleLogin() {
         const nis = document.getElementById('loginNis').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -311,22 +374,9 @@
         }
 
         currentStudent = student;
-        document.getElementById('studentName').textContent = student.nama;
-        document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
-        document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
         
-        // Tampilkan foto jika ada
-        const photoEl = document.getElementById('studentPhoto');
-        const iconEl = document.getElementById('studentPhotoIcon');
-        
-        if (student.foto) {
-            photoEl.src = student.foto;
-            photoEl.classList.remove('hidden');
-            iconEl.classList.add('hidden');
-        } else {
-            photoEl.classList.add('hidden');
-            iconEl.classList.remove('hidden');
-        }
+        // ✅ TAMPILKAN DATA SISWA + FOTO
+        updateStudentDisplay();
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
@@ -337,6 +387,8 @@
     }
 
     function loadAttendance() {
+        if (!currentStudent) return;
+        
         const month = document.getElementById('monthFilter').value;
         const year = document.getElementById('yearFilter').value;
         
@@ -380,6 +432,7 @@
             return;
         }
 
+        // ✅ TAMPILKAN FOTO JUGA DI SETIAP ITEM RIWAYAT
         list.innerHTML = filtered.map(r => {
             const date = new Date(r.tanggal);
             const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -397,8 +450,14 @@
                 manual: 'fa-pen'
             };
 
+            // Foto dari record attendance (sudah disalin dari data siswa saat scan)
+            const photoHtml = r.student_photo ? 
+                `<img src="${r.student_photo}" class="student-avatar-small">` : 
+                `<div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold text-sm">${r.student_nama ? r.student_nama.charAt(0).toUpperCase() : '?'}</div>`;
+
             return `
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                    ${photoHtml}
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="text-sm font-medium text-gray-800">${dayName}, ${formattedDate}</span>
@@ -432,6 +491,10 @@
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('loginNis').value = '';
         document.getElementById('loginPassword').value = '';
+        
+        // Reset foto
+        document.getElementById('studentPhoto').classList.add('hidden');
+        document.getElementById('photoPlaceholder').classList.remove('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
