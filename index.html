@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pantau Absensi | Wali Murid</title>
+  <title>Pantau Absensi & Hafalan | Wali Murid</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
@@ -35,6 +35,15 @@
     .toast-error { background: #ef4444; }
     .toast-info { background: #3b82f6; }
     
+    .student-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
     .status-badge {
       padding: 4px 8px;
       border-radius: 9999px;
@@ -46,6 +55,58 @@
     .status-izin { background: #fef3c7; color: #b45309; }
     .status-sakit { background: #fee2e2; color: #dc2626; }
     .status-absen { background: #f3f4f6; color: #6b7280; }
+    
+    .hafalan-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
+      border-left: 4px solid #10b981;
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .hafalan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
+    }
+    
+    .hafalan-progress {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .hafalan-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    
+    .hadist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .hadist-item {
+      padding: 6px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    
+    .hadist-selesai {
+      background: #10b981;
+      color: white;
+    }
+    
+    .hadist-belum {
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
     
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
@@ -64,37 +125,18 @@
       background: #94a3b8;
     }
 
-    /* Style untuk foto siswa */
-    .student-avatar {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    .tab-button {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
     }
 
-    .student-avatar-small {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #e5e7eb;
-    }
-
-    .photo-placeholder {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .tab-button.active {
+      background: #10b981;
       color: white;
-      font-size: 24px;
-      font-weight: bold;
-      border: 3px solid white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -120,14 +162,14 @@
           <input type="password" id="loginPassword" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan password">
         </div>
         <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
-          <i class="fas fa-sign-in-alt mr-2"></i> Lihat Absensi
+          <i class="fas fa-sign-in-alt mr-2"></i> Lihat Absensi & Hafalan
         </button>
       </div>
       
       <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
         <p class="text-xs text-blue-700 text-center">
           <i class="fas fa-info-circle mr-1"></i>
-          Hubungi sekolah untuk mendapatkan password. Demo: NIS 2024001, password 12345678
+          Hubungi sekolah untuk mendapatkan password. Demo: NIS 696, password 12345678
         </p>
       </div>
     </div>
@@ -136,17 +178,13 @@
   <!-- Dashboard Screen -->
   <div id="dashboardScreen" class="hidden p-4">
     <div class="max-w-4xl mx-auto">
-      <!-- Header dengan Foto -->
+      <!-- Header with Photo -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
         <div class="flex items-center gap-4">
-          <!-- Foto Siswa -->
-          <div id="studentPhotoContainer" class="relative">
-            <img id="studentPhoto" src="" alt="Foto Siswa" class="student-avatar hidden">
-            <div id="photoPlaceholder" class="photo-placeholder">
-              <span id="initialName"></span>
-            </div>
+          <div id="studentPhotoContainer" class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg overflow-hidden">
+            <img id="studentPhoto" src="" alt="Foto Siswa" class="w-full h-full object-cover hidden">
+            <i id="studentPhotoIcon" class="fas fa-child text-3xl"></i>
           </div>
-          
           <div class="flex-1">
             <h2 id="studentName" class="text-2xl font-bold"></h2>
             <p id="studentClass" class="text-white/80 text-sm"></p>
@@ -183,6 +221,120 @@
         </div>
         <div class="w-full bg-gray-200 rounded-full h-3">
           <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- ========== PROGRES HAFALAN SECTION ========== -->
+      <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
+        <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i class="fas fa-book-open text-green-600"></i>
+          Progres Hafalan
+        </h3>
+        
+        <!-- Loading State -->
+        <div id="hafalanLoading" class="text-center py-4">
+          <i class="fas fa-spinner fa-spin text-green-600 mr-2"></i>
+          <span class="text-gray-600">Memuat data hafalan...</span>
+        </div>
+        
+        <!-- Error State -->
+        <div id="hafalanError" class="hidden text-center py-4 text-red-600">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          <span id="hafalanErrorMessage">Gagal memuat data</span>
+        </div>
+        
+        <!-- Content State -->
+        <div id="hafalanContent" class="hidden">
+          <!-- Tab Navigation untuk Pilihan Tampilan -->
+          <div class="flex gap-2 mb-4 border-b pb-2">
+            <button onclick="showHafalanTab('ringkasan')" id="tabRingkasan" class="tab-button active">Ringkasan</button>
+            <button onclick="showHafalanTab('quran')" id="tabQuran" class="tab-button">Detail Quran</button>
+            <button onclick="showHafalanTab('hadist')" id="tabHadist" class="tab-button">Detail Hadist</button>
+          </div>
+
+          <!-- Tab Ringkasan -->
+          <div id="tabRingkasanContent" class="space-y-4">
+            <!-- Hafalan Quran -->
+            <div class="hafalan-card rounded-xl p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-quran text-green-600"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-800">Hafalan Quran</h4>
+                </div>
+                <span id="quranJuz" class="text-sm font-bold text-green-600">-</span>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Juz Terakhir</span>
+                  <span class="font-medium" id="quranDetail">-</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Target 30 Juz</span>
+                  <span class="font-medium" id="quranProgress">0%</span>
+                </div>
+                <div class="hafalan-progress">
+                  <div id="quranProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hafalan Hadist Arba'in -->
+            <div class="hafalan-card rounded-xl p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-hadith text-blue-600"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-800">Hadist Arba'in</h4>
+                </div>
+                <span id="hadistCount" class="text-sm font-bold text-blue-600">0/42</span>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Hadist ke-</span>
+                  <span class="font-medium" id="hadistTerakhir">-</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Target 42 Hadist</span>
+                  <span class="font-medium" id="hadistProgress">0%</span>
+                </div>
+                <div class="hafalan-progress">
+                  <div id="hadistProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Detail Quran -->
+          <div id="tabQuranContent" class="hidden space-y-4">
+            <div class="bg-blue-50 rounded-xl p-4">
+              <h4 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <i class="fas fa-list-check text-green-600"></i>
+                Rincian Hafalan Quran
+              </h4>
+              <div id="quranDetailList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                <!-- Akan diisi JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Detail Hadist -->
+          <div id="tabHadistContent" class="hidden space-y-4">
+            <div class="bg-blue-50 rounded-xl p-4">
+              <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+                  <i class="fas fa-list-check text-blue-600"></i>
+                  Rincian Hadist Arba'in
+                </h4>
+                <span id="hadistStats" class="text-xs bg-white px-2 py-1 rounded-full">0/42</span>
+              </div>
+              <div id="hadistDetailList" class="hadist-grid max-h-60 overflow-y-auto custom-scrollbar p-1">
+                <!-- Akan diisi JavaScript -->
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -240,6 +392,7 @@
   <div id="toastContainer"></div>
 
   <script>
+    // ==================== KONFIGURASI ====================
     const JSONBIN_CONFIG = {
         API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
         BINS: {
@@ -249,11 +402,206 @@
         BASE_URL: "https://api.jsonbin.io/v3/b"
     };
 
+    // ==================== KONFIGURASI GOOGLE SHEETS ====================
+    // TODO: GANTI DENGAN API KEY ANDA (https://console.cloud.google.com/)
+    const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18"; 
+    
+    // ID Spreadsheet (ambil dari URL)
+    const SHEET_IDS = {
+        QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s",  // Hafalan Quran
+        HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs" // Hadist Arba'in
+    };
+
+    // Nama sheet untuk setiap kelas
+    const SHEET_NAMES = {
+        X: "X",
+        XI: "XI", 
+        XII: "XII"
+    };
+
     let students = [];
     let attendanceRecords = [];
     let currentStudent = null;
     let refreshInterval = null;
+    let hafalanData = {
+        quran: null,
+        hadist: null
+    };
 
+    // ==================== FUNGSI TAB ====================
+    function showHafalanTab(tabName) {
+        // Sembunyikan semua tab content
+        document.getElementById('tabRingkasanContent').classList.add('hidden');
+        document.getElementById('tabQuranContent').classList.add('hidden');
+        document.getElementById('tabHadistContent').classList.add('hidden');
+        
+        // Nonaktifkan semua tab button
+        document.getElementById('tabRingkasan').classList.remove('active');
+        document.getElementById('tabQuran').classList.remove('active');
+        document.getElementById('tabHadist').classList.remove('active');
+        
+        // Aktifkan tab yang dipilih
+        if (tabName === 'ringkasan') {
+            document.getElementById('tabRingkasanContent').classList.remove('hidden');
+            document.getElementById('tabRingkasan').classList.add('active');
+        } else if (tabName === 'quran') {
+            document.getElementById('tabQuranContent').classList.remove('hidden');
+            document.getElementById('tabQuran').classList.add('active');
+        } else if (tabName === 'hadist') {
+            document.getElementById('tabHadistContent').classList.remove('hidden');
+            document.getElementById('tabHadist').classList.add('active');
+        }
+    }
+
+    // ==================== FUNGSI GOOGLE SHEETS ====================
+    async function fetchSheetData(sheetId, sheetName, range) {
+        try {
+            // Format: SheetName!Range
+            const fullRange = `${sheetName}!${range}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(fullRange)}?key=${GOOGLE_API_KEY}`;
+            
+            console.log(`Fetching: ${fullRange}`);
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.values || [];
+        } catch (error) {
+            console.error(`Error fetching ${sheetName}:`, error);
+            return null;
+        }
+    }
+
+    async function loadHafalanProgress() {
+        // Sembunyikan semua state dulu
+        document.getElementById('hafalanLoading').classList.remove('hidden');
+        document.getElementById('hafalanError').classList.add('hidden');
+        document.getElementById('hafalanContent').classList.add('hidden');
+
+        if (!currentStudent) return;
+
+        try {
+            // Tentukan sheet berdasarkan kelas siswa
+            let studentSheet = SHEET_NAMES.X;
+            if (currentStudent.kelas.startsWith('XI')) {
+                studentSheet = SHEET_NAMES.XI;
+            } else if (currentStudent.kelas.startsWith('XII')) {
+                studentSheet = SHEET_NAMES.XII;
+            }
+
+            // Fetch data dari kedua sheet sesuai kelas siswa
+            const [quranData, hadistData] = await Promise.all([
+                fetchSheetData(SHEET_IDS.QURAN, studentSheet, "A:G"), // Kolom A-G (NIS, Nama, Juz, dll)
+                fetchSheetData(SHEET_IDS.HADIST, studentSheet, "A:AM") // Kolom A-AM (sampai Hadist 42)
+            ]);
+
+            // Sembunyikan loading
+            document.getElementById('hafalanLoading').classList.add('hidden');
+
+            // ========== PROSES DATA QURAN ==========
+            let quranFound = false;
+            if (quranData && quranData.length > 1) {
+                const rows = quranData.slice(1); // Skip header
+                // Cari berdasarkan No. Induk (kolom B di sheet Quran)
+                const studentRow = rows.find(row => row[1]?.toString() === currentStudent.nis);
+                
+                if (studentRow) {
+                    quranFound = true;
+                    // Asumsi: Kolom C = Juz terakhir
+                    const juz = studentRow[2] || '0';
+                    const juzNumber = parseInt(juz) || 0;
+                    const progress = Math.min(100, (juzNumber / 30) * 100);
+                    
+                    document.getElementById('quranJuz').textContent = `Juz ${juz}`;
+                    document.getElementById('quranDetail').textContent = `Juz ${juz}`;
+                    document.getElementById('quranProgress').textContent = `${progress.toFixed(1)}%`;
+                    document.getElementById('quranProgressBar').style.width = `${progress}%`;
+                    
+                    // Detail Quran (untuk tab detail)
+                    let quranDetailHtml = '';
+                    for (let i = 1; i <= 30; i++) {
+                        const status = i <= juzNumber ? '✅' : '⭕';
+                        quranDetailHtml += `
+                            <div class="flex justify-between items-center py-1 border-b border-gray-200 text-sm">
+                                <span>Juz ${i}</span>
+                                <span class="${i <= juzNumber ? 'text-green-600' : 'text-gray-400'}">${status}</span>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('quranDetailList').innerHTML = quranDetailHtml;
+                }
+            }
+
+            if (!quranFound) {
+                document.getElementById('quranJuz').textContent = 'Belum ada data';
+                document.getElementById('quranDetail').textContent = '-';
+                document.getElementById('quranProgress').textContent = '0%';
+                document.getElementById('quranProgressBar').style.width = '0%';
+                document.getElementById('quranDetailList').innerHTML = '<p class="text-gray-500 text-sm">Belum ada data hafalan Quran</p>';
+            }
+
+            // ========== PROSES DATA HADIST ==========
+            let hadistFound = false;
+            if (hadistData && hadistData.length > 1) {
+                const rows = hadistData.slice(1); // Skip header
+                // Cari berdasarkan No. Induk (kolom B di sheet Hadist)
+                const studentRow = rows.find(row => row[1]?.toString() === currentStudent.nis);
+                
+                if (studentRow) {
+                    hadistFound = true;
+                    
+                    // Kolom F = Progres (jumlah hadist)
+                    const progres = studentRow[5] || '0';
+                    const hadistCount = parseInt(progres) || 0;
+                    const progressPercent = Math.min(100, (hadistCount / 42) * 100);
+                    
+                    document.getElementById('hadistCount').textContent = `${hadistCount}/42`;
+                    document.getElementById('hadistTerakhir').textContent = hadistCount > 0 ? `Hadist ${hadistCount}` : '-';
+                    document.getElementById('hadistProgress').textContent = `${progressPercent.toFixed(1)}%`;
+                    document.getElementById('hadistProgressBar').style.width = `${progressPercent}%`;
+                    document.getElementById('hadistStats').textContent = `${hadistCount}/42`;
+                    
+                    // Detail Hadist (kolom G sampai seterusnya)
+                    let hadistDetailHtml = '';
+                    for (let i = 1; i <= 42; i++) {
+                        const colIndex = 6 + (i - 1); // Kolom G = index 6
+                        const status = studentRow[colIndex];
+                        const isSelesai = status && status.toString().trim() !== '';
+                        
+                        hadistDetailHtml += `
+                            <div class="hadist-item ${isSelesai ? 'hadist-selesai' : 'hadist-belum'}">
+                                Hadist ${i}
+                            </div>
+                        `;
+                    }
+                    document.getElementById('hadistDetailList').innerHTML = hadistDetailHtml;
+                }
+            }
+
+            if (!hadistFound) {
+                document.getElementById('hadistCount').textContent = '0/42';
+                document.getElementById('hadistTerakhir').textContent = '-';
+                document.getElementById('hadistProgress').textContent = '0%';
+                document.getElementById('hadistProgressBar').style.width = '0%';
+                document.getElementById('hadistStats').textContent = '0/42';
+                document.getElementById('hadistDetailList').innerHTML = '<p class="text-gray-500 text-sm col-span-full">Belum ada data hafalan Hadist</p>';
+            }
+
+            // Tampilkan konten
+            document.getElementById('hafalanContent').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error loading hafalan:', error);
+            document.getElementById('hafalanLoading').classList.add('hidden');
+            document.getElementById('hafalanErrorMessage').textContent = 'Gagal memuat data hafalan. Periksa koneksi atau API Key.';
+            document.getElementById('hafalanError').classList.remove('hidden');
+        }
+    }
+
+    // ==================== FUNGSI JSONBIN ====================
     async function loadData() {
         try {
             const [studentsRes, attendanceRes] = await Promise.all([
@@ -274,12 +622,6 @@
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
             if (currentStudent) {
-                // ✅ Update data student jika ada perubahan dari admin
-                const updatedStudent = students.find(s => s.id === currentStudent.id);
-                if (updatedStudent) {
-                    currentStudent = updatedStudent;
-                    updateStudentDisplay();
-                }
                 loadAttendance();
             }
         } catch (error) {
@@ -290,7 +632,10 @@
 
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(loadData, 30000); // Refresh setiap 30 detik
+        refreshInterval = setInterval(() => {
+            loadData();
+            if (currentStudent) loadHafalanProgress();
+        }, 30000);
     }
 
     function showToast(message, type = 'success') {
@@ -327,35 +672,6 @@
         });
     }
 
-    // ✅ FUNGSI UPDATE TAMPILAN SISWA (TERMASUK FOTO)
-    function updateStudentDisplay() {
-        if (!currentStudent) return;
-        
-        document.getElementById('studentName').textContent = currentStudent.nama;
-        document.getElementById('studentClass').textContent = `${currentStudent.kelas} - ${currentStudent.jurusan}`;
-        document.getElementById('studentNis').textContent = `NIS: ${currentStudent.nis}`;
-        
-        // ✅ TAMPILKAN FOTO JIKA ADA
-        const studentPhoto = document.getElementById('studentPhoto');
-        const photoPlaceholder = document.getElementById('photoPlaceholder');
-        const initialName = document.getElementById('initialName');
-        
-        if (currentStudent.photo) {
-            // Tampilkan foto
-            studentPhoto.src = currentStudent.photo;
-            studentPhoto.classList.remove('hidden');
-            photoPlaceholder.classList.add('hidden');
-        } else {
-            // Tampilkan placeholder dengan inisial
-            studentPhoto.classList.add('hidden');
-            photoPlaceholder.classList.remove('hidden');
-            
-            // Ambil huruf pertama dari nama
-            const initial = currentStudent.nama ? currentStudent.nama.charAt(0).toUpperCase() : '?';
-            initialName.textContent = initial;
-        }
-    }
-
     async function handleLogin() {
         const nis = document.getElementById('loginNis').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -374,21 +690,33 @@
         }
 
         currentStudent = student;
+        document.getElementById('studentName').textContent = student.nama;
+        document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
+        document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
         
-        // ✅ TAMPILKAN DATA SISWA + FOTO
-        updateStudentDisplay();
+        // Tampilkan foto jika ada
+        const photoEl = document.getElementById('studentPhoto');
+        const iconEl = document.getElementById('studentPhotoIcon');
+        
+        if (student.photo) {
+            photoEl.src = student.photo;
+            photoEl.classList.remove('hidden');
+            iconEl.classList.add('hidden');
+        } else {
+            photoEl.classList.add('hidden');
+            iconEl.classList.remove('hidden');
+        }
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
 
         loadAttendance();
+        await loadHafalanProgress(); // Muat data hafalan
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
     }
 
     function loadAttendance() {
-        if (!currentStudent) return;
-        
         const month = document.getElementById('monthFilter').value;
         const year = document.getElementById('yearFilter').value;
         
@@ -432,7 +760,6 @@
             return;
         }
 
-        // ✅ TAMPILKAN FOTO JUGA DI SETIAP ITEM RIWAYAT
         list.innerHTML = filtered.map(r => {
             const date = new Date(r.tanggal);
             const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -450,14 +777,8 @@
                 manual: 'fa-pen'
             };
 
-            // Foto dari record attendance (sudah disalin dari data siswa saat scan)
-            const photoHtml = r.student_photo ? 
-                `<img src="${r.student_photo}" class="student-avatar-small">` : 
-                `<div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold text-sm">${r.student_nama ? r.student_nama.charAt(0).toUpperCase() : '?'}</div>`;
-
             return `
-                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                    ${photoHtml}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="text-sm font-medium text-gray-800">${dayName}, ${formattedDate}</span>
@@ -491,10 +812,6 @@
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('loginNis').value = '';
         document.getElementById('loginPassword').value = '';
-        
-        // Reset foto
-        document.getElementById('studentPhoto').classList.add('hidden');
-        document.getElementById('photoPlaceholder').classList.remove('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
