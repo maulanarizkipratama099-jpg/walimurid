@@ -35,6 +35,15 @@
     .toast-error { background: #ef4444; }
     .toast-info { background: #3b82f6; }
     
+    .student-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
     .status-badge {
       padding: 4px 8px;
       border-radius: 9999px;
@@ -103,11 +112,12 @@
   <!-- Dashboard Screen -->
   <div id="dashboardScreen" class="hidden p-4">
     <div class="max-w-4xl mx-auto">
-      <!-- Header -->
+      <!-- Header with Photo -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
         <div class="flex items-center gap-4">
-          <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg">
-            <i class="fas fa-child text-3xl"></i>
+          <div id="studentPhotoContainer" class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg overflow-hidden">
+            <img id="studentPhoto" src="" alt="Foto Siswa" class="w-full h-full object-cover hidden">
+            <i id="studentPhotoIcon" class="fas fa-child text-3xl"></i>
           </div>
           <div class="flex-1">
             <h2 id="studentName" class="text-2xl font-bold"></h2>
@@ -304,6 +314,19 @@
         document.getElementById('studentName').textContent = student.nama;
         document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
         document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
+        
+        // Tampilkan foto jika ada
+        const photoEl = document.getElementById('studentPhoto');
+        const iconEl = document.getElementById('studentPhotoIcon');
+        
+        if (student.foto) {
+            photoEl.src = student.foto;
+            photoEl.classList.remove('hidden');
+            iconEl.classList.add('hidden');
+        } else {
+            photoEl.classList.add('hidden');
+            iconEl.classList.remove('hidden');
+        }
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
