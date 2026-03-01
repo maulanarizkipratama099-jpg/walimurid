@@ -412,7 +412,7 @@
         <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
-      <!-- ========== FILTER TAHUN DINAMIS ========== -->
+      <!-- ========== FILTER TAHUN TANPA BATASAN ========== -->
       <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
           <select id="monthFilter" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
@@ -535,7 +535,7 @@
         debugEl.scrollTop = debugEl.scrollHeight;
     }
 
-    // ==================== FUNGSI FILTER TAHUN DINAMIS ====================
+    // ==================== FUNGSI FILTER TAHUN TANPA BATASAN ====================
     function updateYearFilter() {
         const yearSelect = document.getElementById('yearFilter');
         if (!yearSelect) return;
@@ -544,7 +544,7 @@
         const years = new Set();
         const currentYear = new Date().getFullYear();
         
-        // Tambahkan tahun dari data absensi yang ada
+        // Tambahkan tahun dari data absensi yang ada (TANPA BATASAN)
         attendanceRecords.forEach(record => {
             if (record && record.tanggal) {
                 const year = record.tanggal.split('-')[0];
@@ -552,10 +552,10 @@
             }
         });
         
-        // Pastikan tahun-tahun penting selalu ada
-        years.add(currentYear.toString());
-        years.add((currentYear - 1).toString());
-        years.add((currentYear + 1).toString());
+        // Jika tidak ada data sama sekali, setidaknya tampilkan tahun saat ini
+        if (years.size === 0) {
+            years.add(currentYear.toString());
+        }
         
         // Konversi ke array dan urutkan descending (terbaru dulu)
         const sortedYears = Array.from(years).sort((a, b) => b - a);
@@ -567,12 +567,9 @@
             options += `<option value="${year}" ${selected}>${year}</option>`;
         });
         
-        // Jika tidak ada data, tampilkan tahun saat ini saja
-        if (sortedYears.length === 0) {
-            options = `<option value="${currentYear}" selected>${currentYear}</option>`;
-        }
-        
         yearSelect.innerHTML = options;
+        
+        addDebug(`Filter tahun diperbarui: ${sortedYears.join(', ')}`);
     }
 
     // ==================== FUNGSI TEST KONEKSI ====================
@@ -1009,7 +1006,8 @@
         const stats = {
             hadir: filtered.filter(r => r.status === 'hadir').length,
             izin: filtered.filter(r => r.status === 'izin').length,
-            sakit: filtered.filter(r => r.status === 'sakit').length
+            sakit: filtered.filter(r => r.status === 'sakit').length,
+            absen: filtered.filter(r => r.status === 'absen').length
         };
 
         const total = filtered.length;
