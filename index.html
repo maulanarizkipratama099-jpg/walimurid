@@ -412,7 +412,7 @@
         <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
-      <!-- ========== FILTER TAHUN TANPA BATASAN ========== -->
+      <!-- ========== FILTER TAHUN DINAMIS ========== -->
       <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
           <select id="monthFilter" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
@@ -431,9 +431,10 @@
             <option value="12">Desember</option>
           </select>
           
-          <!-- FILTER TAHUN DINAMIS (AKAN DIISI JAVASCRIPT) -->
+          <!-- ✅ TAHUN DINAMIS (TIDAK TERBATAS) -->
           <select id="yearFilter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-            <!-- Options akan diisi oleh JavaScript -->
+            <option value="">Semua Tahun</option>
+            <!-- Akan diisi oleh JavaScript dari data absensi -->
           </select>
           
           <button onclick="loadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
@@ -485,7 +486,6 @@
         HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs"
     };
 
-    // Nama sheet sesuai kelas
     const SHEET_NAMES = {
         X: "X",
         XI: "XI",
@@ -535,51 +535,12 @@
         debugEl.scrollTop = debugEl.scrollHeight;
     }
 
-    // ==================== FUNGSI FILTER TAHUN TANPA BATASAN ====================
-    function updateYearFilter() {
-        const yearSelect = document.getElementById('yearFilter');
-        if (!yearSelect) return;
-        
-        // Kumpulkan semua tahun dari data absensi
-        const years = new Set();
-        const currentYear = new Date().getFullYear();
-        
-        // Tambahkan tahun dari data absensi yang ada (TANPA BATASAN)
-        attendanceRecords.forEach(record => {
-            if (record && record.tanggal) {
-                const year = record.tanggal.split('-')[0];
-                if (year) years.add(year);
-            }
-        });
-        
-        // Jika tidak ada data sama sekali, setidaknya tampilkan tahun saat ini
-        if (years.size === 0) {
-            years.add(currentYear.toString());
-        }
-        
-        // Konversi ke array dan urutkan descending (terbaru dulu)
-        const sortedYears = Array.from(years).sort((a, b) => b - a);
-        
-        // Buat options HTML
-        let options = '';
-        sortedYears.forEach(year => {
-            const selected = (year === currentYear.toString()) ? 'selected' : '';
-            options += `<option value="${year}" ${selected}>${year}</option>`;
-        });
-        
-        yearSelect.innerHTML = options;
-        
-        addDebug(`Filter tahun diperbarui: ${sortedYears.join(', ')}`);
-    }
-
     // ==================== FUNGSI TEST KONEKSI ====================
     async function testGoogleSheet() {
         showToast('Menguji koneksi ke Google Sheets...', 'info');
         addDebug('=== TEST KONEKSI DIMULAI ===');
         
         try {
-            // Test sheet Quran
-            addDebug('Mencoba mengakses sheet Quran...');
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_IDS.QURAN}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
             
@@ -797,12 +758,10 @@
         try {
             const kelasSheet = getSheetNameByClass(currentStudent.kelas);
             
-            // Ambil nama surat
             if (surahNames.length === 0) {
                 surahNames = await getSurahNames(SHEET_IDS.QURAN, kelasSheet);
             }
             
-            // Fetch data Quran
             addDebug('Mengambil data Quran...');
             let quranData = [];
             try {
@@ -811,7 +770,6 @@
                 addDebug(`Gagal ambil data Quran: ${error.message}`);
             }
             
-            // Fetch data Hadist
             addDebug('Mengambil data Hadist...');
             let hadistData = [];
             try {
@@ -822,7 +780,6 @@
 
             document.getElementById('hafalanLoading').classList.add('hidden');
 
-            // Proses Quran
             if (quranData && quranData.length > 0) {
                 const studentRow = quranData.find(row => {
                     const rowNis = row[COLUMN_INDEX.QURAN.NIS]?.toString().trim();
@@ -840,7 +797,6 @@
                 resetQuranData();
             }
 
-            // Proses Hadist
             if (hadistData && hadistData.length > 0) {
                 const studentRow = hadistData.find(row => {
                     const rowNis = row[COLUMN_INDEX.HADIST.NIS]?.toString().trim();
@@ -893,16 +849,48 @@
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
-            // Update filter tahun setelah data dimuat
-            updateYearFilter();
-            
             if (currentStudent) {
                 loadAttendance();
+                // ✅ Update pilihan tahun setiap kali data dimuat
+                updateYearOptions();
             }
         } catch (error) {
             console.error('Error loading data:', error);
             showToast('Gagal memuat data', 'error');
         }
+    }
+
+    // ==================== FUNGSI UPDATE TAHUN DINAMIS ====================
+    function updateYearOptions() {
+        if (!currentStudent || !attendanceRecords.length) return;
+        
+        // Filter absensi untuk siswa ini
+        const studentAttendance = attendanceRecords.filter(r => r.student_id === currentStudent.id);
+        
+        // Ambil semua tahun dari data tanggal
+        const years = new Set();
+        studentAttendance.forEach(record => {
+            if (record.tanggal) {
+                const year = record.tanggal.split('-')[0];
+                if (year) years.add(year);
+            }
+        });
+        
+        // Urutkan tahun dari yang terbaru
+        const sortedYears = Array.from(years).sort((a, b) => b - a);
+        
+        // Update select option
+        const yearSelect = document.getElementById('yearFilter');
+        const currentValue = yearSelect.value;
+        
+        let options = '<option value="">Semua Tahun</option>';
+        sortedYears.forEach(year => {
+            options += `<option value="${year}" ${year === currentValue ? 'selected' : ''}>${year}</option>`;
+        });
+        
+        yearSelect.innerHTML = options;
+        
+        addDebug(`Pilihan tahun diperbarui: ${sortedYears.join(', ')}`);
     }
 
     function startAutoRefresh() {
@@ -978,11 +966,9 @@
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
 
-        // Update filter tahun sekali lagi (untuk jaga-jaga)
-        updateYearFilter();
-        
         loadAttendance();
         await loadHafalanProgress();
+        updateYearOptions(); // ✅ Update pilihan tahun setelah login
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
     }
@@ -1006,8 +992,7 @@
         const stats = {
             hadir: filtered.filter(r => r.status === 'hadir').length,
             izin: filtered.filter(r => r.status === 'izin').length,
-            sakit: filtered.filter(r => r.status === 'sakit').length,
-            absen: filtered.filter(r => r.status === 'absen').length
+            sakit: filtered.filter(r => r.status === 'sakit').length
         };
 
         const total = filtered.length;
@@ -1087,8 +1072,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        const today = new Date();
-        document.getElementById('yearFilter').value = today.getFullYear().toString();
+        // Tidak perlu set default tahun di sini karena akan dinamis
     });
   </script>
 </body>
