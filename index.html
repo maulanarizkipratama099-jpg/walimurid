@@ -56,6 +56,28 @@
     .status-sakit { background: #fee2e2; color: #dc2626; }
     .status-absen { background: #f3f4f6; color: #6b7280; }
     
+    .pelanggaran-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .pelanggaran-ringan {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    
+    .pelanggaran-sedang {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .pelanggaran-berat {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    
     .hafalan-card {
       background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
       border-left: 4px solid #10b981;
@@ -126,12 +148,6 @@
       text-overflow: ellipsis;
     }
     
-    .pelanggaran-card {
-      background: linear-gradient(135deg, #fff0f0 0%, #ffe6e6 100%);
-      border-left: 4px solid #ef4444;
-      transition: all 0.3s ease;
-    }
-    
     .debug-info {
       background: #1e1e2f;
       color: #00ff00;
@@ -176,6 +192,10 @@
       font-size: 12px;
       margin-top: 8px;
       cursor: pointer;
+    }
+    
+    .pelanggaran-item {
+      border-left: 4px solid #f59e0b;
     }
   </style>
 </head>
@@ -237,7 +257,7 @@
       </div>
 
       <!-- Stats Cards -->
-      <div class="grid grid-cols-3 gap-3 mb-6">
+      <div class="grid grid-cols-4 gap-3 mb-6">
         <div class="bg-white rounded-xl p-4 text-center shadow-sm hover:shadow-md transition">
           <div class="text-2xl font-bold text-green-600" id="statHadir">0</div>
           <div class="text-xs text-gray-500 mt-1">Hadir</div>
@@ -249,6 +269,10 @@
         <div class="bg-white rounded-xl p-4 text-center shadow-sm hover:shadow-md transition">
           <div class="text-2xl font-bold text-red-600" id="statSakit">0</div>
           <div class="text-xs text-gray-500 mt-1">Sakit</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-2xl font-bold text-orange-600" id="totalPoin">0</div>
+          <div class="text-xs text-gray-500 mt-1">Poin Pelanggaran</div>
         </div>
       </div>
 
@@ -418,49 +442,31 @@
         <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
-      <!-- ========== POIN PELANGGARAN SECTION ========== -->
+      <!-- ========== RIWAYAT PELANGGARAN ========== -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
         <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <i class="fas fa-exclamation-triangle text-red-600"></i>
-          Poin Pelanggaran
+          <i class="fas fa-exclamation-triangle text-orange-500"></i>
+          Riwayat Pelanggaran
         </h3>
         
-        <!-- Loading State -->
         <div id="pelanggaranLoading" class="text-center py-4 hidden">
-          <i class="fas fa-spinner fa-spin text-red-600 mr-2"></i>
-          <span class="text-gray-600">Memuat data pelanggaran...</span>
+          <i class="fas fa-spinner fa-spin text-orange-600 mr-2"></i>
+          <span class="text-gray-600">Memuat pelanggaran...</span>
         </div>
         
-        <!-- Error State -->
-        <div id="pelanggaranError" class="hidden text-center py-4 text-red-600 bg-red-50 rounded-xl">
-          <i class="fas fa-exclamation-circle mr-2"></i>
-          <span id="pelanggaranErrorMessage">Gagal memuat data pelanggaran</span>
+        <div id="pelanggaranEmpty" class="text-center py-8 text-gray-500 hidden">
+          <i class="fas fa-check-circle text-4xl text-green-300 mb-2"></i>
+          <p>Tidak ada catatan pelanggaran</p>
         </div>
         
-        <!-- Content State -->
-        <div id="pelanggaranContent" class="space-y-4">
-          <!-- Total Poin Card -->
-          <div class="pelanggaran-card rounded-xl p-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-600">Total Poin Pelanggaran</p>
-                <p id="totalPoin" class="text-3xl font-bold text-red-600">0</p>
-              </div>
-              <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- Riwayat Pelanggaran -->
-          <div>
-            <h4 class="text-sm font-semibold text-gray-700 mb-3">Riwayat Pelanggaran</h4>
-            <div id="pelanggaranList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-              <!-- Akan diisi JavaScript -->
-              <div class="text-center py-4 text-gray-500">
-                Belum ada catatan pelanggaran
-              </div>
-            </div>
+        <div id="pelanggaranList" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+          <!-- Akan diisi JavaScript -->
+        </div>
+        
+        <div id="pelanggaranSummary" class="mt-4 p-3 bg-orange-50 rounded-lg text-sm hidden">
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-orange-700">Total Poin Pelanggaran:</span>
+            <span id="totalPoinPelanggaran" class="font-bold text-orange-700 text-lg">0</span>
           </div>
         </div>
       </div>
@@ -484,10 +490,9 @@
             <option value="12">Desember</option>
           </select>
           
-          <!-- ✅ TAHUN DINAMIS (TIDAK TERBATAS) -->
+          <!-- TAHUN DINAMIS -->
           <select id="yearFilter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
             <option value="">Semua Tahun</option>
-            <!-- Akan diisi oleh JavaScript dari data absensi -->
           </select>
           
           <button onclick="loadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
@@ -527,7 +532,7 @@
         BINS: {
             STUDENTS: "699ffd15ae596e708f4b42a4",
             ATTENDANCE: "699ffd3c43b1c97be99f754c",
-            PELANGGARAN: "69a3c6abae596e708f5431b9" // 🔥 BIN ID PELANGGARAN
+            PELANGGARAN: "69a3f6e5d0ea881f40e42434"
         },
         BASE_URL: "https://api.jsonbin.io/v3/b"
     };
@@ -570,7 +575,7 @@
 
     let students = [];
     let attendanceRecords = [];
-    let pelanggaranRecords = []; // 🔥 Data pelanggaran
+    let pelanggaranRecords = [];
     let currentStudent = null;
     let refreshInterval = null;
     let debugMode = false;
@@ -884,74 +889,92 @@
         loadHafalanProgress();
     }
 
-    // ==================== FUNGSI PELANGGARAN (DIAMBIL DARI JSONBIN) ====================
+    // ==================== FUNGSI PELANGGARAN ====================
     async function loadPelanggaran() {
         if (!currentStudent) return;
         
-        document.getElementById('pelanggaranLoading').classList.remove('hidden');
-        document.getElementById('pelanggaranError').classList.add('hidden');
+        document.getElementById('pelanggaranLoading')?.classList.remove('hidden');
         
         try {
             const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.PELANGGARAN}/latest`, {
                 headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'X-Bin-Meta': 'false' }
             });
             
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.pelanggaran) {
+                    pelanggaranRecords = Array.isArray(data.pelanggaran) ? data.pelanggaran : [];
+                } else {
+                    pelanggaranRecords = Array.isArray(data) ? data : [];
+                }
+            } else {
+                pelanggaranRecords = [];
+            }
             
-            const data = await response.json();
-            const allPelanggaran = Array.isArray(data) ? data : [];
+            document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
             // Filter pelanggaran untuk siswa ini
-            const siswaPelanggaran = allPelanggaran.filter(p => p.student_id === currentStudent.id);
+            const siswaPelanggaran = pelanggaranRecords.filter(p => p.student_id === currentStudent.id);
             
-            renderPelanggaranWali(siswaPelanggaran);
-            document.getElementById('pelanggaranLoading').classList.add('hidden');
+            // Update statistik poin
+            const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
+            document.getElementById('totalPoin').textContent = totalPoin;
+            
+            // Tampilkan list pelanggaran
+            renderPelanggaranList(siswaPelanggaran);
             
         } catch (error) {
             console.error('Error loading pelanggaran:', error);
-            document.getElementById('pelanggaranLoading').classList.add('hidden');
-            document.getElementById('pelanggaranErrorMessage').textContent = error.message;
-            document.getElementById('pelanggaranError').classList.remove('hidden');
+            document.getElementById('pelanggaranLoading')?.classList.add('hidden');
         }
     }
 
-    function renderPelanggaranWali(pelanggaran) {
+    function renderPelanggaranList(pelanggaran) {
         const listEl = document.getElementById('pelanggaranList');
-        const totalPoinEl = document.getElementById('totalPoin');
-        const contentEl = document.getElementById('pelanggaranContent');
-        
-        contentEl.classList.remove('hidden');
+        const emptyEl = document.getElementById('pelanggaranEmpty');
+        const summaryEl = document.getElementById('pelanggaranSummary');
+        const totalPoinEl = document.getElementById('totalPoinPelanggaran');
         
         if (pelanggaran.length === 0) {
-            listEl.innerHTML = '<div class="text-center py-4 text-gray-500">Belum ada catatan pelanggaran</div>';
-            totalPoinEl.textContent = '0';
+            listEl.innerHTML = '';
+            emptyEl.classList.remove('hidden');
+            summaryEl.classList.add('hidden');
             return;
         }
+        
+        emptyEl.classList.add('hidden');
+        summaryEl.classList.remove('hidden');
+        
+        // Urutkan dari yang terbaru
+        pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
         
         // Hitung total poin
         const totalPoin = pelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
         totalPoinEl.textContent = totalPoin;
         
-        // Urutkan dari terbaru
-        pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
-        
-        listEl.innerHTML = pelanggaran.map(p => `
-            <div class="bg-red-50 rounded-lg p-3 border-l-4 border-red-500">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-semibold text-red-600">${p.poin} Poin</span>
-                        <p class="text-sm font-medium text-gray-800 mt-1">${p.keterangan}</p>
-                        ${p.sanksi ? `<p class="text-xs text-gray-600 mt-1">Sanksi: ${p.sanksi}</p>` : ''}
+        // Render list
+        listEl.innerHTML = pelanggaran.map(p => {
+            // Tentukan kelas badge berdasarkan poin
+            let badgeClass = 'pelanggaran-ringan';
+            if (p.poin >= 20) badgeClass = 'pelanggaran-berat';
+            else if (p.poin >= 10) badgeClass = 'pelanggaran-sedang';
+            
+            const tanggal = new Date(p.tanggal).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+            
+            return `
+                <div class="bg-orange-50 rounded-xl p-4 pelanggaran-item">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs text-gray-500">${tanggal}</span>
+                        <span class="pelanggaran-badge ${badgeClass} font-bold">${p.poin} Poin</span>
                     </div>
-                    <span class="text-xs text-gray-500">${formatTanggal(p.tanggal)}</span>
+                    <div class="font-semibold text-gray-800 mb-1">${p.jenis}</div>
+                    <div class="text-xs text-gray-600">${p.kategori_nama || '-'}</div>
+                    ${p.keterangan ? `<p class="text-xs text-gray-500 mt-2">${p.keterangan}</p>` : ''}
                 </div>
-            </div>
-        `).join('');
-    }
-
-    function formatTanggal(dateStr) {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            `;
+        }).join('');
     }
 
     // ==================== FUNGSI JSONBIN ====================
@@ -977,7 +1000,6 @@
             if (currentStudent) {
                 loadAttendance();
                 updateYearOptions();
-                loadPelanggaran(); // 🔥 Load pelanggaran dari JSONBin
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -1018,9 +1040,7 @@
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
             loadData();
-            if (currentStudent) {
-                loadPelanggaran(); // 🔥 Refresh pelanggaran
-            }
+            if (currentStudent) loadPelanggaran();
         }, 30000);
     }
 
@@ -1094,7 +1114,7 @@
 
         loadAttendance();
         await loadHafalanProgress();
-        await loadPelanggaran(); // 🔥 Load pelanggaran
+        await loadPelanggaran();
         updateYearOptions();
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
@@ -1192,6 +1212,7 @@
         }
         currentStudent = null;
         surahNames = [];
+        pelanggaranRecords = [];
         document.getElementById('dashboardScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('loginNis').value = '';
