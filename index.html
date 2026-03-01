@@ -198,18 +198,57 @@
       border-left: 4px solid #f59e0b;
     }
 
-    /* Style untuk map container */
-    .map-container {
-      width: 100%;
-      height: 150px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 2px solid #e5e7eb;
+    .location-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    .location-info {
-      background: #f0f9ff;
-      border-left: 4px solid #3b82f6;
+    .location-badge.in-school {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    .location-badge.outside {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .location-badge:hover {
+      transform: scale(1.05);
+    }
+
+    .location-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .location-modal.active {
+      display: flex;
+    }
+
+    .location-modal-content {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -537,15 +576,15 @@
   </div>
 
   <!-- MODAL LOKASI -->
-  <div id="lokasiModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="modal-content w-full max-w-2xl p-6">
+  <div id="locationModal" class="location-modal">
+    <div class="location-modal-content">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold">Lokasi Absensi</h3>
-        <button onclick="closeLokasiModal()" class="text-gray-500 hover:text-gray-700">
+        <button onclick="closeLocationModal()" class="text-gray-500 hover:text-gray-700">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div id="lokasiDetail" class="space-y-4">
+      <div id="locationModalContent">
         <!-- Akan diisi JavaScript -->
       </div>
     </div>
@@ -555,13 +594,6 @@
   <div id="toastContainer"></div>
 
   <script>
-    // ==================== KONSTANTA ====================
-    const SCHOOL_LOCATION = {
-        lat: -7.230610592775489,
-        lng: 112.7470361749994,
-        name: "MA Ibnu Husain"
-    };
-
     // ==================== KONFIGURASI ====================
     const JSONBIN_CONFIG = {
         API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
@@ -571,6 +603,14 @@
             PELANGGARAN: "69a3f6e5d0ea881f40e42434"
         },
         BASE_URL: "https://api.jsonbin.io/v3/b"
+    };
+
+    // ==================== KONFIGURASI GOOGLE MAPS ====================
+    const GOOGLE_MAPS_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18";
+    const SCHOOL_COORDS = {
+        lat: -7.230610592775489,
+        lng: 112.7470361749994,
+        name: "MA Ibnu Husain"
     };
 
     // ==================== KONFIGURASI GOOGLE SHEETS ====================
@@ -629,6 +669,84 @@
         const time = new Date().toLocaleTimeString();
         debugEl.innerHTML += `<div>[${time}] ${message}</div>`;
         debugEl.scrollTop = debugEl.scrollHeight;
+    }
+
+    // ==================== FUNGSI LOKASI ====================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function isInSchool(lat, lng) {
+        if (!lat || !lng) return false;
+        const distance = calculateDistance(lat, lng, SCHOOL_COORDS.lat, SCHOOL_COORDS.lng);
+        return distance < 0.1;
+    }
+
+    function getLocationBadge(lat, lng) {
+        if (!lat || !lng) return null;
+        
+        const inSchool = isInSchool(lat, lng);
+        const distance = calculateDistance(lat, lng, SCHOOL_COORDS.lat, SCHOOL_COORDS.lng).toFixed(2);
+        const statusClass = inSchool ? 'in-school' : 'outside';
+        const statusText = inSchool ? 'Di Sekolah' : 'Luar Sekolah';
+        
+        return {
+            html: `
+                <span class="location-badge ${statusClass}" onclick="showLocationModal(${lat}, ${lng}, '${statusText}', ${distance})">
+                    <i class="fas fa-map-marker-alt"></i>
+                    ${distance} km
+                </span>
+            `,
+            inSchool,
+            distance,
+            statusText
+        };
+    }
+
+    function showLocationModal(lat, lng, status, distance) {
+        const modal = document.getElementById('locationModal');
+        const content = document.getElementById('locationModalContent');
+        
+        const mapsUrl = `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${lat},${lng}`;
+        
+        content.innerHTML = `
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-semibold">Koordinat:</span>
+                    <span class="text-sm">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-semibold">Status:</span>
+                    <span class="text-sm font-bold ${status === 'Di Sekolah' ? 'text-green-600' : 'text-red-600'}">${status}</span>
+                </div>
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-semibold">Jarak dari sekolah:</span>
+                    <span class="text-sm">${distance} km</span>
+                </div>
+            </div>
+            <iframe
+                width="100%"
+                height="400"
+                style="border:0; border-radius: 12px;"
+                loading="lazy"
+                allowfullscreen
+                src="${mapsUrl}">
+            </iframe>
+        `;
+        
+        modal.classList.add('active');
+    }
+
+    function closeLocationModal() {
+        document.getElementById('locationModal').classList.remove('active');
     }
 
     // ==================== FUNGSI TEST KONEKSI ====================
@@ -925,90 +1043,6 @@
         loadHafalanProgress();
     }
 
-    // ==================== FUNGSI MODAL LOKASI ====================
-    function openLokasiModal(attendance) {
-        const modal = document.getElementById('lokasiModal');
-        const detail = document.getElementById('lokasiDetail');
-        
-        if (!attendance.location) {
-            detail.innerHTML = '<p class="text-gray-500 text-center py-4">Tidak ada data lokasi</p>';
-            modal.classList.remove('hidden');
-            return;
-        }
-        
-        const date = new Date(attendance.tanggal).toLocaleDateString('id-ID', {
-            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-        });
-        
-        const time = new Date(attendance.timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-        
-        // Hitung jarak dari sekolah
-        const distance = calculateDistance(
-            attendance.location.lat, attendance.location.lng,
-            SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
-        );
-        
-        detail.innerHTML = `
-            <div class="space-y-3">
-                <div class="flex items-center gap-2 text-sm">
-                    <i class="fas fa-user text-blue-600"></i>
-                    <span class="font-medium">${attendance.student_nama}</span>
-                    <span class="text-gray-500">(${attendance.student_nis})</span>
-                </div>
-                <div class="flex items-center gap-2 text-sm">
-                    <i class="fas fa-calendar text-blue-600"></i>
-                    <span>${date} • ${time}</span>
-                </div>
-                <div class="location-info p-3 rounded-lg">
-                    <div class="flex items-center gap-2 text-sm mb-2">
-                        <i class="fas fa-map-marker-alt text-blue-600"></i>
-                        <span class="font-medium">Lokasi Absensi</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>Latitude: ${attendance.location.lat.toFixed(6)}</div>
-                        <div>Longitude: ${attendance.location.lng.toFixed(6)}</div>
-                        <div class="col-span-2">Jarak dari sekolah: <span class="font-bold">${distance.toFixed(2)} km</span></div>
-                    </div>
-                </div>
-                <div class="map-container">
-                    <iframe
-                        width="100%"
-                        height="200"
-                        frameborder="0"
-                        style="border:0"
-                        src="https://www.google.com/maps/embed/v1/place?key=${GOOGLE_API_KEY}&q=${attendance.location.lat},${attendance.location.lng}&zoom=15"
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Lokasi ini diambil saat siswa melakukan scan QR
-                </p>
-            </div>
-        `;
-        
-        modal.classList.remove('hidden');
-    }
-
-    function closeLokasiModal() {
-        document.getElementById('lokasiModal').classList.add('hidden');
-    }
-
-    // Hitung jarak antara dua koordinat (Haversine formula)
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Radius bumi dalam km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
     // ==================== FUNGSI PELANGGARAN ====================
     async function loadPelanggaran() {
         if (!currentStudent) return;
@@ -1033,14 +1067,11 @@
             
             document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
-            // Filter pelanggaran untuk siswa ini
             const siswaPelanggaran = pelanggaranRecords.filter(p => p.student_id === currentStudent.id);
             
-            // Update statistik poin
             const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
             document.getElementById('totalPoin').textContent = totalPoin;
             
-            // Tampilkan list pelanggaran
             renderPelanggaranList(siswaPelanggaran);
             
         } catch (error) {
@@ -1065,16 +1096,12 @@
         emptyEl.classList.add('hidden');
         summaryEl.classList.remove('hidden');
         
-        // Urutkan dari yang terbaru
         pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
         
-        // Hitung total poin
         const totalPoin = pelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
         totalPoinEl.textContent = totalPoin;
         
-        // Render list
         listEl.innerHTML = pelanggaran.map(p => {
-            // Tentukan kelas badge berdasarkan poin
             let badgeClass = 'pelanggaran-ringan';
             if (p.poin >= 20) badgeClass = 'pelanggaran-berat';
             else if (p.poin >= 10) badgeClass = 'pelanggaran-sedang';
@@ -1300,20 +1327,8 @@
                 manual: 'fa-pen'
             };
 
-            // Tambahkan tombol lokasi jika ada
-            let locationButton = '';
-            if (r.location) {
-                const distance = calculateDistance(
-                    r.location.lat, r.location.lng,
-                    SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
-                );
-                locationButton = `
-                    <button onclick='openLokasiModal(${JSON.stringify(r).replace(/'/g, "\\'")})' 
-                            class="text-blue-600 hover:text-blue-800 text-xs ml-2">
-                        <i class="fas fa-map-marker-alt mr-1"></i>${distance.toFixed(2)} km
-                    </button>
-                `;
-            }
+            const locationBadge = r.latitude && r.longitude ? 
+                getLocationBadge(r.latitude, r.longitude) : null;
 
             return `
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
@@ -1323,7 +1338,6 @@
                             <span class="text-xs text-gray-500">
                                 <i class="fas fa-clock mr-1"></i>${formatTime(r.timestamp)}
                             </span>
-                            ${locationButton}
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="status-badge ${statusColors[r.status]}">
@@ -1333,6 +1347,7 @@
                                 <i class="fas ${metodeIcon[r.metode] || 'fa-question'} mr-1"></i>
                                 ${r.metode || 'manual'}
                             </span>
+                            ${locationBadge ? locationBadge.html : ''}
                         </div>
                         ${r.keterangan ? `<p class="text-xs text-gray-500 mt-1">📝 ${r.keterangan}</p>` : ''}
                     </div>
