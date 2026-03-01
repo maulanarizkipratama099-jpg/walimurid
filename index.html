@@ -126,6 +126,12 @@
       text-overflow: ellipsis;
     }
     
+    .pelanggaran-card {
+      background: linear-gradient(135deg, #fff0f0 0%, #ffe6e6 100%);
+      border-left: 4px solid #ef4444;
+      transition: all 0.3s ease;
+    }
+    
     .debug-info {
       background: #1e1e2f;
       color: #00ff00;
@@ -412,6 +418,53 @@
         <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
+      <!-- ========== POIN PELANGGARAN SECTION ========== -->
+      <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
+        <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-red-600"></i>
+          Poin Pelanggaran
+        </h3>
+        
+        <!-- Loading State -->
+        <div id="pelanggaranLoading" class="text-center py-4 hidden">
+          <i class="fas fa-spinner fa-spin text-red-600 mr-2"></i>
+          <span class="text-gray-600">Memuat data pelanggaran...</span>
+        </div>
+        
+        <!-- Error State -->
+        <div id="pelanggaranError" class="hidden text-center py-4 text-red-600 bg-red-50 rounded-xl">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          <span id="pelanggaranErrorMessage">Gagal memuat data pelanggaran</span>
+        </div>
+        
+        <!-- Content State -->
+        <div id="pelanggaranContent" class="space-y-4">
+          <!-- Total Poin Card -->
+          <div class="pelanggaran-card rounded-xl p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600">Total Poin Pelanggaran</p>
+                <p id="totalPoin" class="text-3xl font-bold text-red-600">0</p>
+              </div>
+              <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Riwayat Pelanggaran -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 mb-3">Riwayat Pelanggaran</h4>
+            <div id="pelanggaranList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+              <!-- Akan diisi JavaScript -->
+              <div class="text-center py-4 text-gray-500">
+                Belum ada catatan pelanggaran
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ========== FILTER TAHUN DINAMIS ========== -->
       <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
@@ -473,7 +526,8 @@
         API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
         BINS: {
             STUDENTS: "699ffd15ae596e708f4b42a4",
-            ATTENDANCE: "699ffd3c43b1c97be99f754c"
+            ATTENDANCE: "699ffd3c43b1c97be99f754c",
+            PELANGGARAN: "69a3c6abae596e708f5431b9" // 🔥 BIN ID PELANGGARAN
         },
         BASE_URL: "https://api.jsonbin.io/v3/b"
     };
@@ -516,6 +570,7 @@
 
     let students = [];
     let attendanceRecords = [];
+    let pelanggaranRecords = []; // 🔥 Data pelanggaran
     let currentStudent = null;
     let refreshInterval = null;
     let debugMode = false;
@@ -829,6 +884,76 @@
         loadHafalanProgress();
     }
 
+    // ==================== FUNGSI PELANGGARAN (DIAMBIL DARI JSONBIN) ====================
+    async function loadPelanggaran() {
+        if (!currentStudent) return;
+        
+        document.getElementById('pelanggaranLoading').classList.remove('hidden');
+        document.getElementById('pelanggaranError').classList.add('hidden');
+        
+        try {
+            const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.PELANGGARAN}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'X-Bin-Meta': 'false' }
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const data = await response.json();
+            const allPelanggaran = Array.isArray(data) ? data : [];
+            
+            // Filter pelanggaran untuk siswa ini
+            const siswaPelanggaran = allPelanggaran.filter(p => p.student_id === currentStudent.id);
+            
+            renderPelanggaranWali(siswaPelanggaran);
+            document.getElementById('pelanggaranLoading').classList.add('hidden');
+            
+        } catch (error) {
+            console.error('Error loading pelanggaran:', error);
+            document.getElementById('pelanggaranLoading').classList.add('hidden');
+            document.getElementById('pelanggaranErrorMessage').textContent = error.message;
+            document.getElementById('pelanggaranError').classList.remove('hidden');
+        }
+    }
+
+    function renderPelanggaranWali(pelanggaran) {
+        const listEl = document.getElementById('pelanggaranList');
+        const totalPoinEl = document.getElementById('totalPoin');
+        const contentEl = document.getElementById('pelanggaranContent');
+        
+        contentEl.classList.remove('hidden');
+        
+        if (pelanggaran.length === 0) {
+            listEl.innerHTML = '<div class="text-center py-4 text-gray-500">Belum ada catatan pelanggaran</div>';
+            totalPoinEl.textContent = '0';
+            return;
+        }
+        
+        // Hitung total poin
+        const totalPoin = pelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
+        totalPoinEl.textContent = totalPoin;
+        
+        // Urutkan dari terbaru
+        pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+        
+        listEl.innerHTML = pelanggaran.map(p => `
+            <div class="bg-red-50 rounded-lg p-3 border-l-4 border-red-500">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold text-red-600">${p.poin} Poin</span>
+                        <p class="text-sm font-medium text-gray-800 mt-1">${p.keterangan}</p>
+                        ${p.sanksi ? `<p class="text-xs text-gray-600 mt-1">Sanksi: ${p.sanksi}</p>` : ''}
+                    </div>
+                    <span class="text-xs text-gray-500">${formatTanggal(p.tanggal)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function formatTanggal(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
     // ==================== FUNGSI JSONBIN ====================
     async function loadData() {
         try {
@@ -851,8 +976,8 @@
             
             if (currentStudent) {
                 loadAttendance();
-                // ✅ Update pilihan tahun setiap kali data dimuat
                 updateYearOptions();
+                loadPelanggaran(); // 🔥 Load pelanggaran dari JSONBin
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -864,10 +989,8 @@
     function updateYearOptions() {
         if (!currentStudent || !attendanceRecords.length) return;
         
-        // Filter absensi untuk siswa ini
         const studentAttendance = attendanceRecords.filter(r => r.student_id === currentStudent.id);
         
-        // Ambil semua tahun dari data tanggal
         const years = new Set();
         studentAttendance.forEach(record => {
             if (record.tanggal) {
@@ -876,10 +999,8 @@
             }
         });
         
-        // Urutkan tahun dari yang terbaru
         const sortedYears = Array.from(years).sort((a, b) => b - a);
         
-        // Update select option
         const yearSelect = document.getElementById('yearFilter');
         const currentValue = yearSelect.value;
         
@@ -895,7 +1016,12 @@
 
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(loadData, 30000);
+        refreshInterval = setInterval(() => {
+            loadData();
+            if (currentStudent) {
+                loadPelanggaran(); // 🔥 Refresh pelanggaran
+            }
+        }, 30000);
     }
 
     function showToast(message, type = 'success') {
@@ -968,7 +1094,8 @@
 
         loadAttendance();
         await loadHafalanProgress();
-        updateYearOptions(); // ✅ Update pilihan tahun setelah login
+        await loadPelanggaran(); // 🔥 Load pelanggaran
+        updateYearOptions();
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
     }
