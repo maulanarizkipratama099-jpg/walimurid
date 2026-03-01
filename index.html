@@ -134,9 +134,13 @@
       padding: 8px;
       border-radius: 8px;
       margin-top: 10px;
-      max-height: 150px;
+      max-height: 200px;
       overflow-y: auto;
       display: none;
+    }
+    
+    .debug-info.visible {
+      display: block;
     }
     
     .custom-scrollbar::-webkit-scrollbar {
@@ -156,6 +160,16 @@
       max-height: 300px;
       overflow-y: auto;
       padding-right: 4px;
+    }
+    
+    .test-btn {
+      background: #4f46e5;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-top: 8px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -245,21 +259,30 @@
 
       <!-- ========== PROGRES HAFALAN SECTION ========== -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
-        <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <i class="fas fa-book-open text-green-600"></i>
-          Progres Hafalan
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-book-open text-green-600"></i>
+            Progres Hafalan
+          </h3>
+          <button onclick="testGoogleSheet()" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">
+            Test Koneksi
+          </button>
+        </div>
         
         <!-- Loading State -->
-        <div id="hafalanLoading" class="text-center py-4">
-          <i class="fas fa-spinner fa-spin text-green-600 mr-2"></i>
-          <span class="text-gray-600">Memuat data hafalan...</span>
+        <div id="hafalanLoading" class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-green-600 text-2xl mb-2"></i>
+          <p class="text-gray-600">Memuat data hafalan...</p>
+          <p class="text-xs text-gray-400 mt-2">Jika terlalu lama, cek koneksi atau klik "Test Koneksi"</p>
         </div>
         
         <!-- Error State -->
-        <div id="hafalanError" class="hidden text-center py-4 text-red-600">
-          <i class="fas fa-exclamation-circle mr-2"></i>
-          <span id="hafalanErrorMessage">Gagal memuat data</span>
+        <div id="hafalanError" class="hidden text-center py-6 text-red-600 bg-red-50 rounded-xl">
+          <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+          <p id="hafalanErrorMessage" class="font-medium">Gagal memuat data</p>
+          <button onclick="retryLoadHafalan()" class="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition">
+            Coba Lagi
+          </button>
         </div>
         
         <!-- Content State -->
@@ -300,9 +323,8 @@
               </div>
             </div>
 
-            <!-- Detail Hafalan Quran (Semua 37 Surat) -->
+            <!-- Detail Hafalan Quran -->
             <div class="grid grid-cols-2 gap-4">
-              <!-- Sudah Hafal -->
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -312,7 +334,6 @@
                   <!-- Akan diisi JavaScript -->
                 </div>
               </div>
-              <!-- Belum Hafal -->
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-red-500 rounded-full"></span>
@@ -360,7 +381,7 @@
               </div>
             </div>
 
-            <!-- Detail Hadist (Semua 37 Hadist) -->
+            <!-- Detail Hadist -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
@@ -470,63 +491,34 @@
         XII: "XII"
     };
 
-    // JUMLAH TARGET (37 untuk keduanya)
     const TARGETS = {
-        QURAN: 37,   // 37 surat
-        HADIST: 37   // 37 hadist
+        QURAN: 37,
+        HADIST: 37
     };
 
-    // ==================== INDEKS KOLOM ====================
     const COLUMN_INDEX = {
-        // Untuk Quran (baris data dimulai dari 6, header nama surat di baris 5)
         QURAN: {
-            NO: 0,              // Kolom A
-            NIS: 1,             // Kolom B
-            NAMA: 2,            // Kolom C
-            KELAS: 3,           // Kolom D
-            JK: 4,              // Kolom E
-            TOTAL_HAFALAN: 5,   // Kolom F
-            START_SURAH: 6      // Kolom G (surah 1) sampai AQ (surah 37)
+            NIS: 1,
+            NAMA: 2,
+            KELAS: 3,
+            TOTAL_HAFALAN: 5,
+            START_SURAH: 6
         },
-        // Untuk Hadist
         HADIST: {
-            NO: 0,              // Kolom A
-            NIS: 1,             // Kolom B (No. Induk)
-            NAMA: 2,            // Kolom C
-            KELAS: 3,           // Kolom D
-            JK: 4,              // Kolom E
-            TOTAL_HAFALAN: 5,   // Kolom F (Progres hafalan)
-            START_HADIST: 6     // Kolom G (Hadist 1) sampai AQ (hadist 37)
+            NIS: 1,
+            NAMA: 2,
+            KELAS: 3,
+            TOTAL_HAFALAN: 5,
+            START_HADIST: 6
         }
     };
 
-    // ==================== FUNGSI AMBIL NAMA SURAT DARI BARIS 5 ====================
-    async function getSurahNames(sheetId, sheetName) {
-        try {
-            // Ambil baris 5 (header nama surat) - range A5:AQ5
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A5:AQ5?key=${GOOGLE_API_KEY}`;
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                addDebug(`Gagal ambil nama surat: ${response.status}`);
-                return [];
-            }
-            
-            const data = await response.json();
-            const row = data.values?.[0] || [];
-            
-            // Ambil dari kolom G (index 6) sampai AQ (index 42)
-            const surahNames = row.slice(COLUMN_INDEX.QURAN.START_SURAH, COLUMN_INDEX.QURAN.START_SURAH + TARGETS.QURAN);
-            addDebug(`Nama surat: ${surahNames.join(', ')}`);
-            
-            return surahNames;
-        } catch (error) {
-            console.error('Error fetching surah names:', error);
-            return [];
-        }
-    }
-
-    let surahNames = []; // Cache nama surat
+    let students = [];
+    let attendanceRecords = [];
+    let currentStudent = null;
+    let refreshInterval = null;
+    let debugMode = false;
+    let surahNames = [];
 
     // ==================== FUNGSI DEBUG ====================
     function toggleDebug() {
@@ -542,6 +534,32 @@
         debugEl.scrollTop = debugEl.scrollHeight;
     }
 
+    // ==================== FUNGSI TEST KONEKSI ====================
+    async function testGoogleSheet() {
+        showToast('Menguji koneksi ke Google Sheets...', 'info');
+        addDebug('=== TEST KONEKSI DIMULAI ===');
+        
+        try {
+            // Test sheet Quran
+            addDebug('Mencoba mengakses sheet Quran...');
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_IDS.QURAN}?key=${GOOGLE_API_KEY}`;
+            const response = await fetch(url);
+            
+            if (response.ok) {
+                const data = await response.json();
+                addDebug(`✅ Berhasil! Spreadsheet: ${data.properties.title}`);
+                showToast('Koneksi ke Google Sheets berhasil!', 'success');
+            } else {
+                const error = await response.json();
+                addDebug(`❌ Gagal: ${response.status} - ${error.error?.message || 'Unknown error'}`);
+                showToast(`Gagal: ${error.error?.message || 'Cek API Key'}`, 'error');
+            }
+        } catch (error) {
+            addDebug(`❌ Error: ${error.message}`);
+            showToast('Error: ' + error.message, 'error');
+        }
+    }
+
     // ==================== FUNGSI GOOGLE SHEETS ====================
     async function fetchSheetData(sheetId, sheetName, range) {
         try {
@@ -550,67 +568,68 @@
             const response = await fetch(url);
             
             if (!response.ok) {
-                addDebug(`Error ${response.status}: ${response.statusText}`);
-                throw new Error(`HTTP ${response.status}`);
+                const error = await response.json();
+                addDebug(`Error ${response.status}: ${error.error?.message || response.statusText}`);
+                throw new Error(error.error?.message || `HTTP ${response.status}`);
             }
             
             const data = await response.json();
-            addDebug(`Data ${sheetName}: ${data.values?.length || 0} baris`);
+            addDebug(`✅ Data ${sheetName}: ${data.values?.length || 0} baris`);
             return data.values || [];
         } catch (error) {
             console.error(`Error fetching sheet ${sheetId} - ${sheetName}:`, error);
-            addDebug(`ERROR: ${error.message}`);
-            return null;
+            addDebug(`❌ ERROR: ${error.message}`);
+            throw error;
         }
     }
 
-    // Deteksi kelas berdasarkan string kelas
+    async function getSurahNames(sheetId, sheetName) {
+        try {
+            addDebug('Mengambil nama surat dari baris 5...');
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A5:AQ5?key=${GOOGLE_API_KEY}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                addDebug(`Gagal ambil nama surat: ${response.status}`);
+                return [];
+            }
+            
+            const data = await response.json();
+            const row = data.values?.[0] || [];
+            const names = row.slice(COLUMN_INDEX.QURAN.START_SURAH, COLUMN_INDEX.QURAN.START_SURAH + TARGETS.QURAN);
+            addDebug(`✅ Nama surat: ${names.filter(n => n).length} ditemukan`);
+            return names;
+        } catch (error) {
+            console.error('Error fetching surah names:', error);
+            addDebug(`❌ Error ambil nama surat: ${error.message}`);
+            return [];
+        }
+    }
+
     function getSheetNameByClass(kelas) {
         addDebug(`Kelas siswa: ${kelas}`);
         
-        if (!kelas) {
-            addDebug(`Kelas kosong, default ke X`);
-            return SHEET_NAMES.X;
-        }
+        if (!kelas) return SHEET_NAMES.X;
         
         const kelasUpper = kelas.toUpperCase().trim();
         
-        if (kelasUpper.startsWith('XII')) {
-            addDebug(`Menggunakan sheet: XII`);
-            return SHEET_NAMES.XII;
-        }
-        else if (kelasUpper.startsWith('XI')) {
-            addDebug(`Menggunakan sheet: XI`);
-            return SHEET_NAMES.XI;
-        }
-        else if (kelasUpper.startsWith('X')) {
-            addDebug(`Menggunakan sheet: X`);
-            return SHEET_NAMES.X;
-        }
+        if (kelasUpper.startsWith('XII')) return SHEET_NAMES.XII;
+        if (kelasUpper.startsWith('XI')) return SHEET_NAMES.XI;
+        if (kelasUpper.startsWith('X')) return SHEET_NAMES.X;
         
-        addDebug(`Kelas tidak dikenal, default ke X`);
         return SHEET_NAMES.X;
     }
 
-    // ==================== FUNGSI HAFALAN QURAN ====================
     function processQuranData(row) {
-        addDebug(`Memproses data Quran untuk NIS: ${row[COLUMN_INDEX.QURAN.NIS]}`);
-        
-        // Ambil total hafalan dari kolom F
         const totalHafal = parseInt(row[COLUMN_INDEX.QURAN.TOTAL_HAFALAN]) || 0;
-        addDebug(`Total hafalan dari kolom F: ${totalHafal}`);
         
-        // Cari surat mana saja yang sudah hafal (dari kolom G sampai AQ)
         const hafal = [];
         const belum = [];
         
-        // Loop 37 surat
         for (let i = 1; i <= TARGETS.QURAN; i++) {
             const colIndex = COLUMN_INDEX.QURAN.START_SURAH + (i - 1);
             const status = row[colIndex]?.toString().toLowerCase() || '';
-            
-            // Cek apakah surat ini sudah hafal (☑ atau true)
-            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes';
             
             if (isHafal) {
                 hafal.push(i);
@@ -619,19 +638,12 @@
             }
         }
         
-        addDebug(`Surat hafal: ${hafal.length}`);
-        addDebug(`Surat belum: ${belum.length}`);
-        
-        // Hitung progress
         const progress = (totalHafal / TARGETS.QURAN) * 100;
-        
-        // Cari surat terakhir (angka tertinggi yang sudah hafal)
         const lastSurahNum = hafal.length > 0 ? Math.max(...hafal) : 0;
         const lastSurahName = (lastSurahNum > 0 && surahNames[lastSurahNum - 1]) 
             ? `${lastSurahNum}. ${surahNames[lastSurahNum - 1]}`
             : '-';
         
-        // Update UI
         document.getElementById('quranLastSurah').textContent = lastSurahName;
         document.getElementById('quranTotalHafal').textContent = `${totalHafal} Surat`;
         document.getElementById('quranProgressPercent').textContent = `${progress.toFixed(1)}%`;
@@ -640,33 +652,71 @@
         document.getElementById('quranHafalCount').textContent = hafal.length;
         document.getElementById('quranBelumCount').textContent = belum.length;
         
-        // Render list surat yang sudah hafal (SEMUA)
         const hafalList = document.getElementById('quranHafalList');
-        if (hafal.length > 0) {
-            hafalList.innerHTML = hafal.map(num => `
-                <div class="surah-item hafal">
-                    <div class="surah-number hafal">${num}</div>
-                    <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
-                    <i class="fas fa-check-circle text-green-500 text-xs ml-2"></i>
-                </div>
-            `).join('');
-        } else {
-            hafalList.innerHTML = '<div class="text-xs text-gray-500">Belum ada surat yang hafal</div>';
+        hafalList.innerHTML = hafal.map(num => `
+            <div class="surah-item hafal">
+                <div class="surah-number hafal">${num}</div>
+                <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
+                <i class="fas fa-check-circle text-green-500 text-xs ml-2"></i>
+            </div>
+        `).join('');
+        
+        const belumList = document.getElementById('quranBelumList');
+        belumList.innerHTML = belum.map(num => `
+            <div class="surah-item belum">
+                <div class="surah-number belum">${num}</div>
+                <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
+                <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
+            </div>
+        `).join('');
+    }
+
+    function processHadistData(row) {
+        const totalHafal = parseInt(row[COLUMN_INDEX.HADIST.TOTAL_HAFALAN]) || 0;
+        
+        const hafal = [];
+        const belum = [];
+        
+        for (let i = 1; i <= TARGETS.HADIST; i++) {
+            const colIndex = COLUMN_INDEX.HADIST.START_HADIST + (i - 1);
+            const status = row[colIndex]?.toString().toLowerCase() || '';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes';
+            
+            if (isHafal) {
+                hafal.push(i);
+            } else {
+                belum.push(i);
+            }
         }
         
-        // Render list surat yang belum hafal (SEMUA)
-        const belumList = document.getElementById('quranBelumList');
-        if (belum.length > 0) {
-            belumList.innerHTML = belum.map(num => `
-                <div class="surah-item belum">
-                    <div class="surah-number belum">${num}</div>
-                    <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
-                    <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
-                </div>
-            `).join('');
-        } else {
-            belumList.innerHTML = '<div class="text-xs text-gray-500">Semua surat sudah hafal! 🎉</div>';
-        }
+        const progress = (totalHafal / TARGETS.HADIST) * 100;
+        const lastHadist = hafal.length > 0 ? Math.max(...hafal) : 0;
+        
+        document.getElementById('hadistLast').textContent = lastHadist > 0 ? `Hadist ${lastHadist}` : '-';
+        document.getElementById('hadistTotalHafal').textContent = `${totalHafal} Hadist`;
+        document.getElementById('hadistProgressPercent').textContent = `${progress.toFixed(1)}%`;
+        document.getElementById('hadistProgressBar').style.width = `${progress}%`;
+        document.getElementById('hadistStats').textContent = `${totalHafal}/${TARGETS.HADIST} Hadist`;
+        document.getElementById('hadistHafalCount').textContent = hafal.length;
+        document.getElementById('hadistBelumCount').textContent = belum.length;
+        
+        const hafalList = document.getElementById('hadistHafalList');
+        hafalList.innerHTML = hafal.map(num => `
+            <div class="surah-item hafal">
+                <div class="surah-number hafal">${num}</div>
+                <span class="surah-name">Hadist ${num}</span>
+                <i class="fas fa-check-circle text-green-500 text-xs ml-2"></i>
+            </div>
+        `).join('');
+        
+        const belumList = document.getElementById('hadistBelumList');
+        belumList.innerHTML = belum.map(num => `
+            <div class="surah-item belum">
+                <div class="surah-number belum">${num}</div>
+                <span class="surah-name">Hadist ${num}</span>
+                <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
+            </div>
+        `).join('');
     }
 
     function resetQuranData() {
@@ -681,80 +731,6 @@
         document.getElementById('quranBelumList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
     }
 
-    // ==================== FUNGSI HAFALAN HADIST ====================
-    function processHadistData(row) {
-        addDebug(`Memproses data Hadist untuk NIS: ${row[COLUMN_INDEX.HADIST.NIS]}`);
-        
-        // Ambil total hafalan dari kolom F
-        const totalHafal = parseInt(row[COLUMN_INDEX.HADIST.TOTAL_HAFALAN]) || 0;
-        addDebug(`Total hafalan dari kolom F: ${totalHafal}`);
-        
-        // Cari hadist mana saja yang sudah hafal (dari kolom G sampai AQ)
-        const hafal = [];
-        const belum = [];
-        
-        // Loop 37 hadist
-        for (let i = 1; i <= TARGETS.HADIST; i++) {
-            const colIndex = COLUMN_INDEX.HADIST.START_HADIST + (i - 1);
-            const status = row[colIndex]?.toString().toLowerCase() || '';
-            
-            // Cek apakah hadist ini sudah hafal (☑ atau true)
-            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓';
-            
-            if (isHafal) {
-                hafal.push(i);
-            } else {
-                belum.push(i);
-            }
-        }
-        
-        addDebug(`Hadist hafal: ${hafal.length}`);
-        addDebug(`Hadist belum: ${belum.length}`);
-        
-        // Hitung progress
-        const progress = (totalHafal / TARGETS.HADIST) * 100;
-        
-        // Cari hadist terakhir
-        const lastHadist = hafal.length > 0 ? Math.max(...hafal) : 0;
-        
-        // Update UI
-        document.getElementById('hadistLast').textContent = lastHadist > 0 ? `Hadist ${lastHadist}` : '-';
-        document.getElementById('hadistTotalHafal').textContent = `${totalHafal} Hadist`;
-        document.getElementById('hadistProgressPercent').textContent = `${progress.toFixed(1)}%`;
-        document.getElementById('hadistProgressBar').style.width = `${progress}%`;
-        document.getElementById('hadistStats').textContent = `${totalHafal}/${TARGETS.HADIST} Hadist`;
-        document.getElementById('hadistHafalCount').textContent = hafal.length;
-        document.getElementById('hadistBelumCount').textContent = belum.length;
-        
-        // Render list hadist yang sudah hafal (SEMUA)
-        const hafalList = document.getElementById('hadistHafalList');
-        if (hafal.length > 0) {
-            hafalList.innerHTML = hafal.map(num => `
-                <div class="surah-item hafal">
-                    <div class="surah-number hafal">${num}</div>
-                    <span class="surah-name">Hadist ${num}</span>
-                    <i class="fas fa-check-circle text-green-500 text-xs ml-2"></i>
-                </div>
-            `).join('');
-        } else {
-            hafalList.innerHTML = '<div class="text-xs text-gray-500">Belum ada hadist yang hafal</div>';
-        }
-        
-        // Render list hadist yang belum hafal (SEMUA)
-        const belumList = document.getElementById('hadistBelumList');
-        if (belum.length > 0) {
-            belumList.innerHTML = belum.map(num => `
-                <div class="surah-item belum">
-                    <div class="surah-number belum">${num}</div>
-                    <span class="surah-name">Hadist ${num}</span>
-                    <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
-                </div>
-            `).join('');
-        } else {
-            belumList.innerHTML = '<div class="text-xs text-gray-500">Semua hadist sudah hafal! 🎉</div>';
-        }
-    }
-
     function resetHadistData() {
         document.getElementById('hadistLast').textContent = '-';
         document.getElementById('hadistTotalHafal').textContent = '0 Hadist';
@@ -767,92 +743,96 @@
         document.getElementById('hadistBelumList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
     }
 
-    // ==================== FUNGSI UTAMA LOAD HAFALAN ====================
     async function loadHafalanProgress() {
         document.getElementById('hafalanLoading').classList.remove('hidden');
         document.getElementById('hafalanError').classList.add('hidden');
         document.getElementById('hafalanContent').classList.add('hidden');
-        document.getElementById('debugContent').innerHTML = '';
 
         if (!currentStudent) {
             addDebug('ERROR: currentStudent null');
+            document.getElementById('hafalanLoading').classList.add('hidden');
+            document.getElementById('hafalanErrorMessage').textContent = 'Siswa tidak ditemukan';
+            document.getElementById('hafalanError').classList.remove('hidden');
             return;
         }
-
-        addDebug(`Mencari data untuk NIS: ${currentStudent.nis}`);
-        addDebug(`Nama: ${currentStudent.nama}`);
-        addDebug(`Kelas: ${currentStudent.kelas}`);
 
         try {
             const kelasSheet = getSheetNameByClass(currentStudent.kelas);
             
-            // Ambil nama surat dari baris 5 (hanya sekali)
+            // Ambil nama surat
             if (surahNames.length === 0) {
                 surahNames = await getSurahNames(SHEET_IDS.QURAN, kelasSheet);
             }
             
-            // Fetch data Quran dan Hadist (dari baris 6 sampai seterusnya)
-            addDebug('--- MENGAMBIL DATA QURAN ---');
-            const quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A6:AQ");
+            // Fetch data Quran
+            addDebug('Mengambil data Quran...');
+            let quranData = [];
+            try {
+                quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A6:AQ");
+            } catch (error) {
+                addDebug(`Gagal ambil data Quran: ${error.message}`);
+            }
             
-            addDebug('--- MENGAMBIL DATA HADIST ---');
-            const hadistData = await fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A6:AQ");
+            // Fetch data Hadist
+            addDebug('Mengambil data Hadist...');
+            let hadistData = [];
+            try {
+                hadistData = await fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A6:AQ");
+            } catch (error) {
+                addDebug(`Gagal ambil data Hadist: ${error.message}`);
+            }
 
             document.getElementById('hafalanLoading').classList.add('hidden');
 
-            // Proses data Quran
+            // Proses Quran
             if (quranData && quranData.length > 0) {
-                addDebug(`Data Quran (${kelasSheet}): ${quranData.length} baris data siswa`);
-                
-                // Cari NIS di kolom B
                 const studentRow = quranData.find(row => {
                     const rowNis = row[COLUMN_INDEX.QURAN.NIS]?.toString().trim();
                     return rowNis === currentStudent.nis.toString().trim();
                 });
                 
                 if (studentRow) {
-                    addDebug(`✅ Siswa ditemukan di sheet Quran`);
+                    addDebug('✅ Data Quran ditemukan');
                     processQuranData(studentRow);
                 } else {
-                    addDebug(`❌ Siswa TIDAK ditemukan di sheet Quran`);
+                    addDebug('❌ Data Quran tidak ditemukan');
                     resetQuranData();
                 }
             } else {
-                addDebug(`❌ Data Quran kosong atau error`);
                 resetQuranData();
             }
 
-            // Proses data Hadist
+            // Proses Hadist
             if (hadistData && hadistData.length > 0) {
-                addDebug(`Data Hadist (${kelasSheet}): ${hadistData.length} baris data siswa`);
-                
-                // Cari NIS di kolom B
                 const studentRow = hadistData.find(row => {
                     const rowNis = row[COLUMN_INDEX.HADIST.NIS]?.toString().trim();
                     return rowNis === currentStudent.nis.toString().trim();
                 });
                 
                 if (studentRow) {
-                    addDebug(`✅ Siswa ditemukan di sheet Hadist`);
+                    addDebug('✅ Data Hadist ditemukan');
                     processHadistData(studentRow);
                 } else {
-                    addDebug(`❌ Siswa TIDAK ditemukan di sheet Hadist`);
+                    addDebug('❌ Data Hadist tidak ditemukan');
                     resetHadistData();
                 }
             } else {
-                addDebug(`❌ Data Hadist kosong atau error`);
                 resetHadistData();
             }
 
             document.getElementById('hafalanContent').classList.remove('hidden');
 
         } catch (error) {
-            console.error('Error loading hafalan:', error);
-            addDebug(`🔥 CRITICAL ERROR: ${error.message}`);
+            console.error('Error:', error);
+            addDebug(`🔥 ERROR: ${error.message}`);
             document.getElementById('hafalanLoading').classList.add('hidden');
-            document.getElementById('hafalanErrorMessage').textContent = 'Gagal memuat data hafalan. ' + error.message;
+            document.getElementById('hafalanErrorMessage').textContent = error.message;
             document.getElementById('hafalanError').classList.remove('hidden');
         }
+    }
+
+    function retryLoadHafalan() {
+        loadHafalanProgress();
     }
 
     // ==================== FUNGSI JSONBIN ====================
@@ -886,9 +866,7 @@
 
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => {
-            loadData();
-        }, 30000);
+        refreshInterval = setInterval(loadData, 30000);
     }
 
     function showToast(message, type = 'success') {
@@ -900,10 +878,7 @@
             <span>${message}</span>
         `;
         container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
+        setTimeout(() => toast.remove(), 3000);
     }
 
     function formatDate(dateStr) {
@@ -947,7 +922,6 @@
         document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
         document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
         
-        // Tampilkan foto jika ada
         const photoEl = document.getElementById('studentPhoto');
         const iconEl = document.getElementById('studentPhotoIcon');
         
@@ -988,8 +962,7 @@
         const stats = {
             hadir: filtered.filter(r => r.status === 'hadir').length,
             izin: filtered.filter(r => r.status === 'izin').length,
-            sakit: filtered.filter(r => r.status === 'sakit').length,
-            absen: filtered.filter(r => r.status === 'absen').length
+            sakit: filtered.filter(r => r.status === 'sakit').length
         };
 
         const total = filtered.length;
@@ -1061,7 +1034,7 @@
             refreshInterval = null;
         }
         currentStudent = null;
-        surahNames = []; // Reset cache
+        surahNames = [];
         document.getElementById('dashboardScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('loginNis').value = '';
