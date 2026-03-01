@@ -121,6 +121,19 @@
       color: #dc2626;
     }
     
+    .debug-info {
+      background: #1e1e2f;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
     }
@@ -360,6 +373,12 @@
             </div>
           </div>
         </div>
+
+        <!-- Debug Panel -->
+        <div id="debugPanel" class="debug-info mt-4">
+          <div id="debugContent"></div>
+        </div>
+        <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
       <!-- Filter -->
@@ -434,93 +453,186 @@
         HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs"
     };
 
-    // Mapping kelas ke nama sheet
+    // Nama sheet sesuai kelas
     const SHEET_NAMES = {
         X: "X",
         XI: "XI",
         XII: "XII"
     };
 
-    // Target total
     const TARGETS = {
-        QURAN: 30,    // 30 juz
-        HADIST: 42    // 42 hadist
+        QURAN: 30,
+        HADIST: 42
+    };
+
+    // INDEKS KOLOM (BERDASARKAN INFORMASI ANDA)
+    const COLUMN_INDEX = {
+        NIS: 1,           // Kolom B (index 1)
+        NAMA: 2,          // Kolom C (index 2)
+        JUZ_TERAKHIR: 3,  // Kolom D (index 3)
+        KETERANGAN: 4,    // Kolom E (index 4)
+        LIST_HAFALAN: 5   // Kolom F (index 5) - berisi list juz/hadist yang sudah hafal
     };
 
     let students = [];
     let attendanceRecords = [];
     let currentStudent = null;
     let refreshInterval = null;
+    let debugMode = false;
+
+    // ==================== FUNGSI DEBUG ====================
+    function toggleDebug() {
+        debugMode = !debugMode;
+        document.getElementById('debugPanel').style.display = debugMode ? 'block' : 'none';
+    }
+
+    function addDebug(message) {
+        if (!debugMode) return;
+        const debugEl = document.getElementById('debugContent');
+        const time = new Date().toLocaleTimeString();
+        debugEl.innerHTML += `<div>[${time}] ${message}</div>`;
+        debugEl.scrollTop = debugEl.scrollHeight;
+    }
 
     // ==================== FUNGSI GOOGLE SHEETS ====================
     async function fetchSheetData(sheetId, sheetName, range) {
         try {
+            addDebug(`Fetching: ${sheetName}!${range}`);
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!${range}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
             
             if (!response.ok) {
+                addDebug(`Error ${response.status}: ${response.statusText}`);
                 throw new Error(`HTTP ${response.status}`);
             }
             
             const data = await response.json();
+            addDebug(`Data ${sheetName}: ${data.values?.length || 0} baris`);
             return data.values || [];
         } catch (error) {
             console.error(`Error fetching sheet ${sheetId} - ${sheetName}:`, error);
+            addDebug(`ERROR: ${error.message}`);
             return null;
         }
     }
 
-    // Mendapatkan nama sheet berdasarkan kelas siswa
+    // Deteksi kelas berdasarkan string kelas
     function getSheetNameByClass(kelas) {
-        if (kelas.startsWith('X ')) return SHEET_NAMES.X;
-        if (kelas.startsWith('XI')) return SHEET_NAMES.XI;
-        if (kelas.startsWith('XII')) return SHEET_NAMES.XII;
-        return SHEET_NAMES.X; // Default ke X
+        addDebug(`Kelas siswa: ${kelas}`);
+        
+        if (!kelas) {
+            addDebug(`Kelas kosong, default ke X`);
+            return SHEET_NAMES.X;
+        }
+        
+        const kelasUpper = kelas.toUpperCase().trim();
+        
+        if (kelasUpper.startsWith('XII')) {
+            addDebug(`Menggunakan sheet: XII`);
+            return SHEET_NAMES.XII;
+        }
+        else if (kelasUpper.startsWith('XI')) {
+            addDebug(`Menggunakan sheet: XI`);
+            return SHEET_NAMES.XI;
+        }
+        else if (kelasUpper.startsWith('X')) {
+            addDebug(`Menggunakan sheet: X`);
+            return SHEET_NAMES.X;
+        }
+        
+        addDebug(`Kelas tidak dikenal, default ke X`);
+        return SHEET_NAMES.X;
     }
 
     async function loadHafalanProgress() {
         document.getElementById('hafalanLoading').classList.remove('hidden');
         document.getElementById('hafalanError').classList.add('hidden');
         document.getElementById('hafalanContent').classList.add('hidden');
+        document.getElementById('debugContent').innerHTML = '';
 
-        if (!currentStudent) return;
+        if (!currentStudent) {
+            addDebug('ERROR: currentStudent null');
+            return;
+        }
+
+        addDebug(`Mencari data untuk NIS: ${currentStudent.nis}`);
+        addDebug(`Nama: ${currentStudent.nama}`);
+        addDebug(`Kelas: ${currentStudent.kelas}`);
 
         try {
             const kelasSheet = getSheetNameByClass(currentStudent.kelas);
             
-            // Fetch data dari kedua sheet dengan sheet yang sesuai kelas
-            const [quranData, hadistData] = await Promise.all([
-                fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A:E"), // A:NIS, B:Nama, C:Juz, D:Keterangan, E:Status
-                fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A:E") // A:NIS, B:Nama, C:HadistKe, D:Keterangan, E:Status
-            ]);
+            // Fetch data dari kedua sheet
+            addDebug('--- MENGAMBIL DATA QURAN ---');
+            const quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A:Z");
+            
+            addDebug('--- MENGAMBIL DATA HADIST ---');
+            const hadistData = await fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A:AM");
 
             document.getElementById('hafalanLoading').classList.add('hidden');
 
             // Proses data Quran
             if (quranData && quranData.length > 1) {
+                addDebug(`Data Quran (${kelasSheet}): ${quranData.length} baris (termasuk header)`);
                 const rows = quranData.slice(1); // Skip header
-                const studentRow = rows.find(row => row[0]?.toString() === currentStudent.nis);
+                addDebug(`Baris data: ${rows.length}`);
+                
+                // Tampilkan sample untuk debugging
+                if (rows.length > 0) {
+                    addDebug(`Sample baris 1: NIS=${rows[0][COLUMN_INDEX.NIS]}, Nama=${rows[0][COLUMN_INDEX.NAMA]}`);
+                }
+                
+                // 🔥 PERBAIKAN: Cari NIS di kolom B (index 1)
+                const studentRow = rows.find(row => {
+                    const rowNis = row[COLUMN_INDEX.NIS]?.toString().trim();
+                    const match = rowNis === currentStudent.nis.toString().trim();
+                    if (match) addDebug(`✓ Ditemukan di baris: NIS=${rowNis}, Nama=${row[COLUMN_INDEX.NAMA]}`);
+                    return match;
+                });
                 
                 if (studentRow) {
+                    addDebug(`✅ Siswa ditemukan di sheet Quran`);
                     processQuranData(studentRow);
                 } else {
+                    addDebug(`❌ Siswa TIDAK ditemukan di sheet Quran`);
+                    addDebug(`Mencari NIS: ${currentStudent.nis}`);
+                    addDebug(`Contoh NIS di sheet: ${rows.slice(0, 5).map(r => r[COLUMN_INDEX.NIS]).join(', ')}`);
                     resetQuranData();
                 }
             } else {
+                addDebug(`❌ Data Quran kosong atau error`);
                 resetQuranData();
             }
 
             // Proses data Hadist
             if (hadistData && hadistData.length > 1) {
+                addDebug(`Data Hadist (${kelasSheet}): ${hadistData.length} baris (termasuk header)`);
                 const rows = hadistData.slice(1);
-                const studentRow = rows.find(row => row[0]?.toString() === currentStudent.nis);
+                addDebug(`Baris data: ${rows.length}`);
+                
+                if (rows.length > 0) {
+                    addDebug(`Sample baris 1: NIS=${rows[0][COLUMN_INDEX.NIS]}, Nama=${rows[0][COLUMN_INDEX.NAMA]}`);
+                }
+                
+                // 🔥 PERBAIKAN: Cari NIS di kolom B (index 1)
+                const studentRow = rows.find(row => {
+                    const rowNis = row[COLUMN_INDEX.NIS]?.toString().trim();
+                    const match = rowNis === currentStudent.nis.toString().trim();
+                    if (match) addDebug(`✓ Ditemukan di baris: NIS=${rowNis}, Nama=${row[COLUMN_INDEX.NAMA]}`);
+                    return match;
+                });
                 
                 if (studentRow) {
+                    addDebug(`✅ Siswa ditemukan di sheet Hadist`);
                     processHadistData(studentRow);
                 } else {
+                    addDebug(`❌ Siswa TIDAK ditemukan di sheet Hadist`);
+                    addDebug(`Mencari NIS: ${currentStudent.nis}`);
+                    addDebug(`Contoh NIS di sheet: ${rows.slice(0, 5).map(r => r[COLUMN_INDEX.NIS]).join(', ')}`);
                     resetHadistData();
                 }
             } else {
+                addDebug(`❌ Data Hadist kosong atau error`);
                 resetHadistData();
             }
 
@@ -528,19 +640,28 @@
 
         } catch (error) {
             console.error('Error loading hafalan:', error);
+            addDebug(`🔥 CRITICAL ERROR: ${error.message}`);
             document.getElementById('hafalanLoading').classList.add('hidden');
-            document.getElementById('hafalanErrorMessage').textContent = 'Gagal memuat data hafalan. Periksa koneksi atau API Key.';
+            document.getElementById('hafalanErrorMessage').textContent = 'Gagal memuat data hafalan. ' + error.message;
             document.getElementById('hafalanError').classList.remove('hidden');
         }
     }
 
     function processQuranData(row) {
-        // Asumsi kolom: 0:NIS, 1:Nama, 2:JuzTerakhir, 3:Keterangan, 4:ListJuzHafal (misal: "1,2,3,5,7")
-        const juzTerakhir = row[2] || '0';
-        const juzNumber = parseInt(juzTerakhir) || 0;
-        const listJuz = row[4] ? row[4].split(',').map(j => parseInt(j.trim())).filter(j => !isNaN(j)) : [];
+        addDebug(`Memproses data Quran: NIS=${row[COLUMN_INDEX.NIS]}, Nama=${row[COLUMN_INDEX.NAMA]}`);
         
-        // Buat list 1-30
+        const juzTerakhir = row[COLUMN_INDEX.JUZ_TERAKHIR] || '0';
+        const listJuzStr = row[COLUMN_INDEX.LIST_HAFALAN] || '';
+        
+        addDebug(`Juz terakhir: ${juzTerakhir}`);
+        addDebug(`List Juz: ${listJuzStr}`);
+        
+        const listJuz = listJuzStr
+            ? listJuzStr.split(',').map(j => parseInt(j.trim())).filter(j => !isNaN(j) && j > 0 && j <= 30)
+            : [];
+        
+        addDebug(`Juz hafal (parsed): ${listJuz.join(', ')}`);
+        
         const semuaJuz = Array.from({ length: 30 }, (_, i) => i + 1);
         const juzHafal = new Set(listJuz);
         const hafal = semuaJuz.filter(j => juzHafal.has(j));
@@ -548,6 +669,9 @@
         
         const totalHafal = hafal.length;
         const progress = (totalHafal / TARGETS.QURAN) * 100;
+
+        addDebug(`Total hafal: ${totalHafal} juz`);
+        addDebug(`Progress: ${progress.toFixed(1)}%`);
 
         // Update UI
         document.getElementById('quranLastJuz').textContent = juzTerakhir;
@@ -598,12 +722,20 @@
     }
 
     function processHadistData(row) {
-        // Asumsi kolom: 0:NIS, 1:Nama, 2:HadistTerakhir, 3:Keterangan, 4:ListHadistHafal (misal: "1,2,3,5,7")
-        const hadistTerakhir = row[2] || '0';
-        const hadistNumber = parseInt(hadistTerakhir) || 0;
-        const listHadist = row[4] ? row[4].split(',').map(h => parseInt(h.trim())).filter(h => !isNaN(h)) : [];
+        addDebug(`Memproses data Hadist: NIS=${row[COLUMN_INDEX.NIS]}, Nama=${row[COLUMN_INDEX.NAMA]}`);
         
-        // Buat list 1-42
+        const hadistTerakhir = row[COLUMN_INDEX.JUZ_TERAKHIR] || '0';
+        const listHadistStr = row[COLUMN_INDEX.LIST_HAFALAN] || '';
+        
+        addDebug(`Hadist terakhir: ${hadistTerakhir}`);
+        addDebug(`List Hadist: ${listHadistStr}`);
+        
+        const listHadist = listHadistStr
+            ? listHadistStr.split(',').map(h => parseInt(h.trim())).filter(h => !isNaN(h) && h > 0 && h <= 42)
+            : [];
+        
+        addDebug(`Hadist hafal (parsed): ${listHadist.join(', ')}`);
+        
         const semuaHadist = Array.from({ length: 42 }, (_, i) => i + 1);
         const hadistHafal = new Set(listHadist);
         const hafal = semuaHadist.filter(h => hadistHafal.has(h));
@@ -611,6 +743,9 @@
         
         const totalHafal = hafal.length;
         const progress = (totalHafal / TARGETS.HADIST) * 100;
+
+        addDebug(`Total hafal: ${totalHafal} hadist`);
+        addDebug(`Progress: ${progress.toFixed(1)}%`);
 
         // Update UI
         document.getElementById('hadistLast').textContent = hadistTerakhir;
