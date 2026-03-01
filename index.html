@@ -62,11 +62,6 @@
       transition: all 0.3s ease;
     }
     
-    .hafalan-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
-    }
-    
     .hafalan-progress {
       height: 8px;
       background: #e5e7eb;
@@ -84,31 +79,32 @@
     .surah-item {
       display: flex;
       align-items: center;
-      padding: 8px 12px;
-      border-radius: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
       background: white;
       border: 1px solid #e5e7eb;
-      transition: all 0.2s ease;
+      font-size: 11px;
     }
     
     .surah-item.hafal {
-      border-left: 4px solid #10b981;
+      border-left: 3px solid #10b981;
     }
     
     .surah-item.belum {
-      border-left: 4px solid #ef4444;
-      opacity: 0.7;
+      border-left: 3px solid #ef4444;
+      opacity: 0.6;
     }
     
     .surah-number {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 12px;
+      font-size: 11px;
+      margin-right: 8px;
     }
     
     .surah-number.hafal {
@@ -125,17 +121,17 @@
       background: #1e1e2f;
       color: #00ff00;
       font-family: monospace;
-      font-size: 11px;
+      font-size: 10px;
       padding: 8px;
       border-radius: 8px;
       margin-top: 10px;
-      max-height: 200px;
+      max-height: 150px;
       overflow-y: auto;
       display: none;
     }
     
     .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
+      width: 4px;
     }
     
     .custom-scrollbar::-webkit-scrollbar-track {
@@ -144,11 +140,7 @@
     
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #cbd5e1;
-      border-radius: 3px;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      border-radius: 2px;
     }
   </style>
 </head>
@@ -240,7 +232,7 @@
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
         <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <i class="fas fa-book-open text-green-600"></i>
-          Progres Hafalan
+          Progres Hafalan Quran
         </h3>
         
         <!-- Loading State -->
@@ -256,7 +248,7 @@
         </div>
         
         <!-- Content State -->
-        <div id="hafalanContent" class="hidden space-y-6">
+        <div id="hafalanContent" class="hidden space-y-4">
           <!-- Hafalan Quran -->
           <div class="hafalan-card rounded-xl p-4">
             <div class="flex items-center justify-between mb-3">
@@ -292,85 +284,35 @@
               </div>
             </div>
 
-            <!-- Detail Hafalan (Sudah & Belum) -->
+            <!-- Detail Hafalan (Sudah & Belum) - Grid 2 kolom -->
             <div class="grid grid-cols-2 gap-3">
+              <!-- Sudah Hafal -->
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                   Sudah Hafal (<span id="quranHafalCount">0</span>)
                 </h5>
-                <div id="quranHafalList" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                <div id="quranHafalList" class="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                   <!-- Akan diisi JavaScript -->
                 </div>
               </div>
+              <!-- Belum Hafal -->
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-red-500 rounded-full"></span>
                   Belum Hafal (<span id="quranBelumCount">0</span>)
                 </h5>
-                <div id="quranBelumList" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                <div id="quranBelumList" class="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                   <!-- Akan diisi JavaScript -->
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Hafalan Hadist Arba'in -->
-          <div class="hafalan-card rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-hadith text-blue-600"></i>
-                </div>
-                <h4 class="font-semibold text-gray-800">Hadist Arba'in</h4>
-              </div>
-              <span id="hadistStats" class="text-sm font-bold text-blue-600">-</span>
-            </div>
-
-            <!-- Progress Summary -->
-            <div class="grid grid-cols-3 gap-2 mb-4">
-              <div class="bg-blue-50 rounded-lg p-2 text-center">
-                <div class="text-xs text-gray-600">Hadist Terakhir</div>
-                <div id="hadistLast" class="font-bold text-blue-600">-</div>
-              </div>
-              <div class="bg-blue-50 rounded-lg p-2 text-center">
-                <div class="text-xs text-gray-600">Total Hafal</div>
-                <div id="hadistTotalHafal" class="font-bold text-blue-600">-</div>
-              </div>
-              <div class="bg-blue-50 rounded-lg p-2 text-center">
-                <div class="text-xs text-gray-600">Progress</div>
-                <div id="hadistProgressPercent" class="font-bold text-blue-600">-</div>
-              </div>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="mb-4">
-              <div class="hafalan-progress">
-                <div id="hadistProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
-              </div>
-            </div>
-
-            <!-- Detail Hadist (Sudah & Belum) -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                  <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                  Sudah Hafal (<span id="hadistHafalCount">0</span>)
-                </h5>
-                <div id="hadistHafalList" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
-              </div>
-              <div>
-                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                  <span class="w-2 h-2 bg-red-500 rounded-full"></span>
-                  Belum Hafal (<span id="hadistBelumCount">0</span>)
-                </h5>
-                <div id="hadistBelumList" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
-              </div>
-            </div>
+          <!-- Info Hadist (jika diperlukan) -->
+          <div class="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
+            <i class="fas fa-info-circle mr-2"></i>
+            Data Hadist Arba'in akan segera tersedia.
           </div>
         </div>
 
@@ -449,8 +391,8 @@
     const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18";
     
     const SHEET_IDS = {
-        QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s",
-        HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs"
+        QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s"
+        // HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs" // Untuk nanti
     };
 
     // Nama sheet sesuai kelas
@@ -465,13 +407,17 @@
         HADIST: 42
     };
 
-    // INDEKS KOLOM (BERDASARKAN INFORMASI ANDA)
+    // INDEKS KOLOM BERDASARKAN STRUKTUR ASLI ANDA
     const COLUMN_INDEX = {
-        NIS: 1,           // Kolom B (index 1)
-        NAMA: 2,          // Kolom C (index 2)
-        JUZ_TERAKHIR: 3,  // Kolom D (index 3)
-        KETERANGAN: 4,    // Kolom E (index 4)
-        LIST_HAFALAN: 5   // Kolom F (index 5) - berisi list juz/hadist yang sudah hafal
+        NO: 0,           // Kolom A
+        NIS: 1,          // Kolom B
+        NAMA: 2,         // Kolom C
+        KELAS: 3,        // Kolom D
+        JK: 4,           // Kolom E
+        TOTAL_HAFALAN: 5, // Kolom F - INI PENTING!
+        // Kolom G sampai AQ (index 6 sampai 42) untuk status per juz
+        START_JUZ: 6,     // Kolom G (juz 1)
+        END_JUZ: 42       // Kolom AQ (juz 30, karena G=6, H=7, ... AQ=42)
     };
 
     let students = [];
@@ -479,6 +425,7 @@
     let currentStudent = null;
     let refreshInterval = null;
     let debugMode = false;
+    let hafalanCache = null; // Cache untuk mengurangi lag
 
     // ==================== FUNGSI DEBUG ====================
     function toggleDebug() {
@@ -544,7 +491,31 @@
         return SHEET_NAMES.X;
     }
 
+    // Fungsi untuk memproses status per juz dari kolom G-AQ
+    function processJuzStatus(row) {
+        const hafal = [];
+        const belum = [];
+        
+        // Loop dari juz 1 sampai 30
+        for (let juz = 1; juz <= 30; juz++) {
+            const colIndex = COLUMN_INDEX.START_JUZ + (juz - 1);
+            const status = row[colIndex]?.toString().toLowerCase() || '';
+            
+            // Cek apakah status "true" atau "1" atau "yes"
+            const isHafal = status === 'true' || status === '1' || status === 'yes' || status === '✓';
+            
+            if (isHafal) {
+                hafal.push(juz);
+            } else {
+                belum.push(juz);
+            }
+        }
+        
+        return { hafal, belum };
+    }
+
     async function loadHafalanProgress() {
+        // Tampilkan loading
         document.getElementById('hafalanLoading').classList.remove('hidden');
         document.getElementById('hafalanError').classList.add('hidden');
         document.getElementById('hafalanContent').classList.add('hidden');
@@ -562,13 +533,10 @@
         try {
             const kelasSheet = getSheetNameByClass(currentStudent.kelas);
             
-            // Fetch data dari kedua sheet
+            // Fetch data Quran (range sampai kolom AQ untuk 30 juz)
             addDebug('--- MENGAMBIL DATA QURAN ---');
-            const quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A:Z");
+            const quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A:AQ");
             
-            addDebug('--- MENGAMBIL DATA HADIST ---');
-            const hadistData = await fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A:AM");
-
             document.getElementById('hafalanLoading').classList.add('hidden');
 
             // Proses data Quran
@@ -579,20 +547,75 @@
                 
                 // Tampilkan sample untuk debugging
                 if (rows.length > 0) {
-                    addDebug(`Sample baris 1: NIS=${rows[0][COLUMN_INDEX.NIS]}, Nama=${rows[0][COLUMN_INDEX.NAMA]}`);
+                    addDebug(`Sample baris 1: NIS=${rows[0][COLUMN_INDEX.NIS]}, Nama=${rows[0][COLUMN_INDEX.NAMA]}, Total=${rows[0][COLUMN_INDEX.TOTAL_HAFALAN]}`);
                 }
                 
-                // 🔥 PERBAIKAN: Cari NIS di kolom B (index 1)
+                // Cari NIS di kolom B (index 1)
                 const studentRow = rows.find(row => {
                     const rowNis = row[COLUMN_INDEX.NIS]?.toString().trim();
-                    const match = rowNis === currentStudent.nis.toString().trim();
-                    if (match) addDebug(`✓ Ditemukan di baris: NIS=${rowNis}, Nama=${row[COLUMN_INDEX.NAMA]}`);
-                    return match;
+                    return rowNis === currentStudent.nis.toString().trim();
                 });
                 
                 if (studentRow) {
                     addDebug(`✅ Siswa ditemukan di sheet Quran`);
-                    processQuranData(studentRow);
+                    
+                    // Ambil total hafalan dari kolom F
+                    const totalHafal = parseInt(studentRow[COLUMN_INDEX.TOTAL_HAFALAN]) || 0;
+                    addDebug(`Total hafalan dari kolom F: ${totalHafal}`);
+                    
+                    // Proses status per juz
+                    const { hafal, belum } = processJuzStatus(studentRow);
+                    addDebug(`Juz hafal dari kolom G-AQ: ${hafal.length}`);
+                    
+                    // Gunakan total dari kolom F untuk konsistensi
+                    const progress = (totalHafal / TARGETS.QURAN) * 100;
+                    
+                    // Cari juz terakhir (angka tertinggi yang sudah hafal)
+                    const lastJuz = hafal.length > 0 ? Math.max(...hafal) : 0;
+                    
+                    // Update UI
+                    document.getElementById('quranLastJuz').textContent = lastJuz || '-';
+                    document.getElementById('quranTotalHafal').textContent = `${totalHafal} Juz`;
+                    document.getElementById('quranProgressPercent').textContent = `${progress.toFixed(1)}%`;
+                    document.getElementById('quranProgressBar').style.width = `${progress}%`;
+                    document.getElementById('quranStats').textContent = `${totalHafal}/30 Juz`;
+                    document.getElementById('quranHafalCount').textContent = hafal.length;
+                    document.getElementById('quranBelumCount').textContent = belum.length;
+                    
+                    // Render list hafal (max 15 item)
+                    const hafalList = document.getElementById('quranHafalList');
+                    if (hafal.length > 0) {
+                        hafalList.innerHTML = hafal.slice(0, 15).map(j => `
+                            <div class="surah-item hafal">
+                                <div class="surah-number hafal">${j}</div>
+                                <span class="text-xs flex-1">Juz ${j}</span>
+                                <i class="fas fa-check-circle text-green-500 text-xs"></i>
+                            </div>
+                        `).join('');
+                        if (hafal.length > 15) {
+                            hafalList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${hafal.length - 15} lainnya</div>`;
+                        }
+                    } else {
+                        hafalList.innerHTML = '<div class="text-xs text-gray-500">Belum ada juz yang hafal</div>';
+                    }
+                    
+                    // Render list belum
+                    const belumList = document.getElementById('quranBelumList');
+                    if (belum.length > 0) {
+                        belumList.innerHTML = belum.slice(0, 15).map(j => `
+                            <div class="surah-item belum">
+                                <div class="surah-number belum">${j}</div>
+                                <span class="text-xs flex-1">Juz ${j}</span>
+                                <i class="fas fa-hourglass-half text-red-400 text-xs"></i>
+                            </div>
+                        `).join('');
+                        if (belum.length > 15) {
+                            belumList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${belum.length - 15} lainnya</div>`;
+                        }
+                    } else {
+                        belumList.innerHTML = '<div class="text-xs text-gray-500">Semua juz sudah hafal! 🎉</div>';
+                    }
+                    
                 } else {
                     addDebug(`❌ Siswa TIDAK ditemukan di sheet Quran`);
                     addDebug(`Mencari NIS: ${currentStudent.nis}`);
@@ -602,38 +625,6 @@
             } else {
                 addDebug(`❌ Data Quran kosong atau error`);
                 resetQuranData();
-            }
-
-            // Proses data Hadist
-            if (hadistData && hadistData.length > 1) {
-                addDebug(`Data Hadist (${kelasSheet}): ${hadistData.length} baris (termasuk header)`);
-                const rows = hadistData.slice(1);
-                addDebug(`Baris data: ${rows.length}`);
-                
-                if (rows.length > 0) {
-                    addDebug(`Sample baris 1: NIS=${rows[0][COLUMN_INDEX.NIS]}, Nama=${rows[0][COLUMN_INDEX.NAMA]}`);
-                }
-                
-                // 🔥 PERBAIKAN: Cari NIS di kolom B (index 1)
-                const studentRow = rows.find(row => {
-                    const rowNis = row[COLUMN_INDEX.NIS]?.toString().trim();
-                    const match = rowNis === currentStudent.nis.toString().trim();
-                    if (match) addDebug(`✓ Ditemukan di baris: NIS=${rowNis}, Nama=${row[COLUMN_INDEX.NAMA]}`);
-                    return match;
-                });
-                
-                if (studentRow) {
-                    addDebug(`✅ Siswa ditemukan di sheet Hadist`);
-                    processHadistData(studentRow);
-                } else {
-                    addDebug(`❌ Siswa TIDAK ditemukan di sheet Hadist`);
-                    addDebug(`Mencari NIS: ${currentStudent.nis}`);
-                    addDebug(`Contoh NIS di sheet: ${rows.slice(0, 5).map(r => r[COLUMN_INDEX.NIS]).join(', ')}`);
-                    resetHadistData();
-                }
-            } else {
-                addDebug(`❌ Data Hadist kosong atau error`);
-                resetHadistData();
             }
 
             document.getElementById('hafalanContent').classList.remove('hidden');
@@ -647,68 +638,6 @@
         }
     }
 
-    function processQuranData(row) {
-        addDebug(`Memproses data Quran: NIS=${row[COLUMN_INDEX.NIS]}, Nama=${row[COLUMN_INDEX.NAMA]}`);
-        
-        const juzTerakhir = row[COLUMN_INDEX.JUZ_TERAKHIR] || '0';
-        const listJuzStr = row[COLUMN_INDEX.LIST_HAFALAN] || '';
-        
-        addDebug(`Juz terakhir: ${juzTerakhir}`);
-        addDebug(`List Juz: ${listJuzStr}`);
-        
-        const listJuz = listJuzStr
-            ? listJuzStr.split(',').map(j => parseInt(j.trim())).filter(j => !isNaN(j) && j > 0 && j <= 30)
-            : [];
-        
-        addDebug(`Juz hafal (parsed): ${listJuz.join(', ')}`);
-        
-        const semuaJuz = Array.from({ length: 30 }, (_, i) => i + 1);
-        const juzHafal = new Set(listJuz);
-        const hafal = semuaJuz.filter(j => juzHafal.has(j));
-        const belum = semuaJuz.filter(j => !juzHafal.has(j));
-        
-        const totalHafal = hafal.length;
-        const progress = (totalHafal / TARGETS.QURAN) * 100;
-
-        addDebug(`Total hafal: ${totalHafal} juz`);
-        addDebug(`Progress: ${progress.toFixed(1)}%`);
-
-        // Update UI
-        document.getElementById('quranLastJuz').textContent = juzTerakhir;
-        document.getElementById('quranTotalHafal').textContent = `${totalHafal} Juz`;
-        document.getElementById('quranProgressPercent').textContent = `${progress.toFixed(1)}%`;
-        document.getElementById('quranProgressBar').style.width = `${progress}%`;
-        document.getElementById('quranStats').textContent = `${totalHafal}/30 Juz`;
-        document.getElementById('quranHafalCount').textContent = hafal.length;
-        document.getElementById('quranBelumCount').textContent = belum.length;
-
-        // Render list hafal
-        const hafalList = document.getElementById('quranHafalList');
-        hafalList.innerHTML = hafal.slice(0, 10).map(j => `
-            <div class="surah-item hafal">
-                <div class="surah-number hafal mr-2">${j}</div>
-                <span class="text-xs">Juz ${j}</span>
-                <i class="fas fa-check-circle text-green-500 ml-auto text-xs"></i>
-            </div>
-        `).join('');
-        if (hafal.length > 10) {
-            hafalList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${hafal.length - 10} lainnya</div>`;
-        }
-
-        // Render list belum
-        const belumList = document.getElementById('quranBelumList');
-        belumList.innerHTML = belum.slice(0, 10).map(j => `
-            <div class="surah-item belum">
-                <div class="surah-number belum mr-2">${j}</div>
-                <span class="text-xs">Juz ${j}</span>
-                <i class="fas fa-hourglass-half text-red-400 ml-auto text-xs"></i>
-            </div>
-        `).join('');
-        if (belum.length > 10) {
-            belumList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${belum.length - 10} lainnya</div>`;
-        }
-    }
-
     function resetQuranData() {
         document.getElementById('quranLastJuz').textContent = '-';
         document.getElementById('quranTotalHafal').textContent = '0 Juz';
@@ -719,80 +648,6 @@
         document.getElementById('quranBelumCount').textContent = '0';
         document.getElementById('quranHafalList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
         document.getElementById('quranBelumList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
-    }
-
-    function processHadistData(row) {
-        addDebug(`Memproses data Hadist: NIS=${row[COLUMN_INDEX.NIS]}, Nama=${row[COLUMN_INDEX.NAMA]}`);
-        
-        const hadistTerakhir = row[COLUMN_INDEX.JUZ_TERAKHIR] || '0';
-        const listHadistStr = row[COLUMN_INDEX.LIST_HAFALAN] || '';
-        
-        addDebug(`Hadist terakhir: ${hadistTerakhir}`);
-        addDebug(`List Hadist: ${listHadistStr}`);
-        
-        const listHadist = listHadistStr
-            ? listHadistStr.split(',').map(h => parseInt(h.trim())).filter(h => !isNaN(h) && h > 0 && h <= 42)
-            : [];
-        
-        addDebug(`Hadist hafal (parsed): ${listHadist.join(', ')}`);
-        
-        const semuaHadist = Array.from({ length: 42 }, (_, i) => i + 1);
-        const hadistHafal = new Set(listHadist);
-        const hafal = semuaHadist.filter(h => hadistHafal.has(h));
-        const belum = semuaHadist.filter(h => !hadistHafal.has(h));
-        
-        const totalHafal = hafal.length;
-        const progress = (totalHafal / TARGETS.HADIST) * 100;
-
-        addDebug(`Total hafal: ${totalHafal} hadist`);
-        addDebug(`Progress: ${progress.toFixed(1)}%`);
-
-        // Update UI
-        document.getElementById('hadistLast').textContent = hadistTerakhir;
-        document.getElementById('hadistTotalHafal').textContent = `${totalHafal} Hadist`;
-        document.getElementById('hadistProgressPercent').textContent = `${progress.toFixed(1)}%`;
-        document.getElementById('hadistProgressBar').style.width = `${progress}%`;
-        document.getElementById('hadistStats').textContent = `${totalHafal}/42 Hadist`;
-        document.getElementById('hadistHafalCount').textContent = hafal.length;
-        document.getElementById('hadistBelumCount').textContent = belum.length;
-
-        // Render list hafal
-        const hafalList = document.getElementById('hadistHafalList');
-        hafalList.innerHTML = hafal.slice(0, 10).map(h => `
-            <div class="surah-item hafal">
-                <div class="surah-number hafal mr-2">${h}</div>
-                <span class="text-xs">Hadist ${h}</span>
-                <i class="fas fa-check-circle text-green-500 ml-auto text-xs"></i>
-            </div>
-        `).join('');
-        if (hafal.length > 10) {
-            hafalList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${hafal.length - 10} lainnya</div>`;
-        }
-
-        // Render list belum
-        const belumList = document.getElementById('hadistBelumList');
-        belumList.innerHTML = belum.slice(0, 10).map(h => `
-            <div class="surah-item belum">
-                <div class="surah-number belum mr-2">${h}</div>
-                <span class="text-xs">Hadist ${h}</span>
-                <i class="fas fa-hourglass-half text-red-400 ml-auto text-xs"></i>
-            </div>
-        `).join('');
-        if (belum.length > 10) {
-            belumList.innerHTML += `<div class="text-xs text-gray-500 mt-1">... dan ${belum.length - 10} lainnya</div>`;
-        }
-    }
-
-    function resetHadistData() {
-        document.getElementById('hadistLast').textContent = '-';
-        document.getElementById('hadistTotalHafal').textContent = '0 Hadist';
-        document.getElementById('hadistProgressPercent').textContent = '0%';
-        document.getElementById('hadistProgressBar').style.width = '0%';
-        document.getElementById('hadistStats').textContent = '0/42 Hadist';
-        document.getElementById('hadistHafalCount').textContent = '0';
-        document.getElementById('hadistBelumCount').textContent = '0';
-        document.getElementById('hadistHafalList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
-        document.getElementById('hadistBelumList').innerHTML = '<div class="text-xs text-gray-500">Belum ada data</div>';
     }
 
     // ==================== FUNGSI JSONBIN ====================
@@ -828,7 +683,10 @@
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
             loadData();
-            if (currentStudent) loadHafalanProgress();
+            // Hanya load hafalan jika perlu (bisa dioptimasi dengan cache)
+            if (currentStudent) {
+                // loadHafalanProgress(); // Opsional, bisa diaktifkan jika perlu real-time
+            }
         }, 30000);
     }
 
@@ -905,7 +763,7 @@
         document.getElementById('dashboardScreen').classList.remove('hidden');
 
         loadAttendance();
-        await loadHafalanProgress();
+        await loadHafalanProgress(); // Muat data hafalan sekali saat login
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
     }
