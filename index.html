@@ -6,6 +6,8 @@
   <title>Pantau Absensi & Hafalan | Wali Murid</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { font-family: 'Inter', sans-serif; }
@@ -16,7 +18,7 @@
     }
     
     .animate-fadeIn {
-      animation: fadeIn 0.2s ease-out;
+      animation: fadeIn 0.3s ease-out;
     }
     
     .toast {
@@ -27,9 +29,8 @@
       border-radius: 12px;
       color: white;
       z-index: 9999;
-      animation: fadeIn 0.2s ease-out;
+      animation: fadeIn 0.3s ease-out;
       max-width: 400px;
-      will-change: transform, opacity;
     }
     
     .toast-success { background: #10b981; }
@@ -57,6 +58,23 @@
     .status-sakit { background: #fee2e2; color: #dc2626; }
     .status-absen { background: #f3f4f6; color: #6b7280; }
     
+    .location-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .location-valid {
+      background: #d1fae5;
+      color: #059669;
+    }
+    
+    .location-invalid {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
     .pelanggaran-badge {
       padding: 4px 8px;
       border-radius: 12px;
@@ -82,13 +100,7 @@
     .hafalan-card {
       background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
       border-left: 4px solid #10b981;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      will-change: transform;
-    }
-    
-    .hafalan-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
+      transition: all 0.3s ease;
     }
     
     .hafalan-progress {
@@ -114,7 +126,6 @@
       border: 1px solid #e5e7eb;
       font-size: 11px;
       margin-bottom: 4px;
-      transition: transform 0.1s ease;
     }
     
     .surah-item.hafal {
@@ -190,37 +201,22 @@
       max-height: 300px;
       overflow-y: auto;
       padding-right: 4px;
-      -webkit-overflow-scrolling: touch;
     }
     
-    .virtual-scroll-container {
-      max-height: 400px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+    .map-mini {
+      width: 100%;
+      height: 150px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid #e5e7eb;
     }
     
-    .test-btn {
-      background: #4f46e5;
-      color: white;
-      padding: 8px 16px;
+    .location-info {
+      background: #f0f9ff;
       border-radius: 8px;
-      font-size: 12px;
-      margin-top: 8px;
-      cursor: pointer;
-      transition: transform 0.1s ease;
-    }
-    
-    .test-btn:hover {
-      transform: translateY(-1px);
-    }
-    
-    .pelanggaran-item {
-      border-left: 4px solid #f59e0b;
-      transition: transform 0.1s ease;
-    }
-    
-    .pelanggaran-item:hover {
-      transform: translateX(2px);
+      padding: 8px;
+      font-size: 11px;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -253,7 +249,7 @@
       <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
         <p class="text-xs text-blue-700 text-center">
           <i class="fas fa-info-circle mr-1"></i>
-          Hubungi sekolah untuk mendapatkan password. Demo: NIS 2024001, password 12345678
+          Demo: NIS 2024001, password 12345678
         </p>
       </div>
     </div>
@@ -312,6 +308,18 @@
         </div>
       </div>
 
+      <!-- Informasi Lokasi Sekolah -->
+      <div class="bg-white rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <i class="fas fa-map-marker-alt text-red-500"></i>
+          <span>Lokasi Sekolah: Jl. Irawati 1 No. 15-17, Surabaya</span>
+          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-auto">Radius 100m</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-1">
+          <i class="fas fa-crosshairs mr-1"></i>Koordinat: -7.230636, 112.749601
+        </div>
+      </div>
+
       <!-- ========== PROGRES HAFALAN SECTION ========== -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
@@ -328,7 +336,7 @@
         <div id="hafalanLoading" class="text-center py-8">
           <i class="fas fa-spinner fa-spin text-green-600 text-2xl mb-2"></i>
           <p class="text-gray-600">Memuat data hafalan...</p>
-          <p class="text-xs text-gray-400 mt-2">Jika terlalu lama, cek koneksi atau klik "Test Koneksi"</p>
+          <p class="text-xs text-gray-400 mt-2">Jika terlalu lama, cek koneksi</p>
         </div>
         
         <!-- Error State -->
@@ -343,7 +351,7 @@
         <!-- Content State -->
         <div id="hafalanContent" class="hidden space-y-6">
           
-          <!-- ===== HAFALAN QURAN (37 SURAT) ===== -->
+          <!-- HAFALAN QURAN -->
           <div class="hafalan-card rounded-xl p-4">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
@@ -355,7 +363,6 @@
               <span id="quranStats" class="text-sm font-bold text-green-600">-</span>
             </div>
             
-            <!-- Progress Summary -->
             <div class="grid grid-cols-3 gap-2 mb-4">
               <div class="bg-green-50 rounded-lg p-2 text-center">
                 <div class="text-xs text-gray-600">Surat Terakhir</div>
@@ -371,37 +378,31 @@
               </div>
             </div>
 
-            <!-- Progress Bar -->
             <div class="mb-4">
               <div class="hafalan-progress">
                 <div id="quranProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
               </div>
             </div>
 
-            <!-- Detail Hafalan Quran -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                   Sudah Hafal (<span id="quranHafalCount">0</span>)
                 </h5>
-                <div id="quranHafalList" class="list-container custom-scrollbar space-y-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
+                <div id="quranHafalList" class="list-container custom-scrollbar space-y-1"></div>
               </div>
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-red-500 rounded-full"></span>
                   Belum Hafal (<span id="quranBelumCount">0</span>)
                 </h5>
-                <div id="quranBelumList" class="list-container custom-scrollbar space-y-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
+                <div id="quranBelumList" class="list-container custom-scrollbar space-y-1"></div>
               </div>
             </div>
           </div>
 
-          <!-- ===== HAFALAN HADIST ARBA'IN (37 HADIST) ===== -->
+          <!-- HAFALAN HADIST -->
           <div class="hafalan-card rounded-xl p-4">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
@@ -413,7 +414,6 @@
               <span id="hadistStats" class="text-sm font-bold text-blue-600">-</span>
             </div>
 
-            <!-- Progress Summary -->
             <div class="grid grid-cols-3 gap-2 mb-4">
               <div class="bg-blue-50 rounded-lg p-2 text-center">
                 <div class="text-xs text-gray-600">Hadist Terakhir</div>
@@ -429,42 +429,30 @@
               </div>
             </div>
 
-            <!-- Progress Bar -->
             <div class="mb-4">
               <div class="hafalan-progress">
                 <div id="hadistProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
               </div>
             </div>
 
-            <!-- Detail Hadist -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                   Sudah Hafal (<span id="hadistHafalCount">0</span>)
                 </h5>
-                <div id="hadistHafalList" class="list-container custom-scrollbar space-y-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
+                <div id="hadistHafalList" class="list-container custom-scrollbar space-y-1"></div>
               </div>
               <div>
                 <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                   <span class="w-2 h-2 bg-red-500 rounded-full"></span>
                   Belum Hafal (<span id="hadistBelumCount">0</span>)
                 </h5>
-                <div id="hadistBelumList" class="list-container custom-scrollbar space-y-1">
-                  <!-- Akan diisi JavaScript -->
-                </div>
+                <div id="hadistBelumList" class="list-container custom-scrollbar space-y-1"></div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Debug Panel -->
-        <div id="debugPanel" class="debug-info mt-4">
-          <div id="debugContent"></div>
-        </div>
-        <button onclick="toggleDebug()" class="text-xs text-gray-500 mt-2 underline">Toggle Debug</button>
       </div>
 
       <!-- ========== RIWAYAT PELANGGARAN ========== -->
@@ -484,9 +472,7 @@
           <p>Tidak ada catatan pelanggaran</p>
         </div>
         
-        <div id="pelanggaranList" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2">
-          <!-- Akan diisi JavaScript -->
-        </div>
+        <div id="pelanggaranList" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2"></div>
         
         <div id="pelanggaranSummary" class="mt-4 p-3 bg-orange-50 rounded-lg text-sm hidden">
           <div class="flex justify-between items-center">
@@ -496,7 +482,7 @@
         </div>
       </div>
 
-      <!-- ========== FILTER TAHUN DINAMIS ========== -->
+      <!-- Filter -->
       <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
           <select id="monthFilter" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
@@ -515,12 +501,11 @@
             <option value="12">Desember</option>
           </select>
           
-          <!-- TAHUN DINAMIS -->
           <select id="yearFilter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
             <option value="">Semua Tahun</option>
           </select>
           
-          <button onclick="debouncedLoadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
+          <button onclick="loadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
             <i class="fas fa-search"></i>
             <span class="hidden sm:inline">Filter</span>
           </button>
@@ -532,14 +517,10 @@
         <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <h3 class="font-semibold text-gray-800 flex items-center gap-2">
             <i class="fas fa-history text-blue-600"></i>
-            Riwayat Absensi
+            Riwayat Absensi dengan Lokasi
           </h3>
         </div>
-        <div class="virtual-scroll-container">
-          <div id="attendanceList" class="p-4 space-y-2">
-            <!-- akan diisi oleh JavaScript -->
-          </div>
-        </div>
+        <div id="attendanceList" class="p-4 max-h-96 overflow-y-auto custom-scrollbar space-y-2"></div>
       </div>
 
       <!-- Footer -->
@@ -564,7 +545,7 @@
         BASE_URL: "https://api.jsonbin.io/v3/b"
     };
 
-    // ==================== KONFIGURASI GOOGLE SHEETS ====================
+    // KONFIGURASI GOOGLE SHEETS
     const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18";
     
     const SHEET_IDS = {
@@ -581,6 +562,14 @@
     const TARGETS = {
         QURAN: 37,
         HADIST: 37
+    };
+
+    // LOKASI SEKOLAH
+    const SCHOOL_LOCATION = {
+        lat: -7.230636,
+        lng: 112.749601,
+        radius: 100,
+        address: "Jl. Irawati 1 No. 15-17, Surabaya"
     };
 
     const COLUMN_INDEX = {
@@ -600,7 +589,6 @@
         }
     };
 
-    // ==================== STATE & CACHE ====================
     let students = [];
     let attendanceRecords = [];
     let pelanggaranRecords = [];
@@ -608,75 +596,55 @@
     let refreshInterval = null;
     let debugMode = false;
     let surahNames = [];
-    
-    // Cache untuk performa
-    let studentsCache = null;
-    let attendanceCache = null;
-    let pelanggaranCache = null;
 
-    // ==================== FUNGSI UTILITY ====================
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
+    // ==================== FUNGSI LOKASI ====================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c;
+    }
+
+    function isWithinSchoolRadius(lat, lng) {
+        if (!lat || !lng) return false;
+        const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+        return distance <= SCHOOL_LOCATION.radius;
+    }
+
+    function getLocationStatus(lat, lng) {
+        if (!lat || !lng) return { valid: false, text: 'Tidak diketahui', class: '', distance: null };
+        const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+        const withinRadius = distance <= SCHOOL_LOCATION.radius;
+        return {
+            valid: withinRadius,
+            text: withinRadius ? `Dalam radius (${Math.round(distance)}m)` : `Luar radius (${Math.round(distance)}m)`,
+            class: withinRadius ? 'location-valid' : 'location-invalid',
+            distance: Math.round(distance)
         };
-    }
-
-    function throttle(func, limit) {
-        let inThrottle;
-        return function(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    }
-
-    // Debounced functions
-    const debouncedLoadAttendance = debounce(() => loadAttendance(), 100);
-    const debouncedRenderPelanggaran = debounce(() => renderPelanggaranList(), 100);
-    const debouncedUpdateYearOptions = debounce(() => updateYearOptions(), 100);
-
-    // ==================== FUNGSI DEBUG ====================
-    function toggleDebug() {
-        debugMode = !debugMode;
-        document.getElementById('debugPanel').style.display = debugMode ? 'block' : 'none';
-    }
-
-    function addDebug(message) {
-        if (!debugMode) return;
-        const debugEl = document.getElementById('debugContent');
-        const time = new Date().toLocaleTimeString();
-        debugEl.innerHTML += `<div>[${time}] ${message}</div>`;
-        debugEl.scrollTop = debugEl.scrollHeight;
     }
 
     // ==================== FUNGSI TEST KONEKSI ====================
     async function testGoogleSheet() {
         showToast('Menguji koneksi ke Google Sheets...', 'info');
-        addDebug('=== TEST KONEKSI DIMULAI ===');
         
         try {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_IDS.QURAN}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
             
             if (response.ok) {
-                const data = await response.json();
-                addDebug(`✅ Berhasil! Spreadsheet: ${data.properties.title}`);
                 showToast('Koneksi ke Google Sheets berhasil!', 'success');
             } else {
-                const error = await response.json();
-                addDebug(`❌ Gagal: ${response.status} - ${error.error?.message || 'Unknown error'}`);
-                showToast(`Gagal: ${error.error?.message || 'Cek API Key'}`, 'error');
+                showToast('Gagal koneksi ke Google Sheets', 'error');
             }
         } catch (error) {
-            addDebug(`❌ Error: ${error.message}`);
             showToast('Error: ' + error.message, 'error');
         }
     }
@@ -684,60 +652,38 @@
     // ==================== FUNGSI GOOGLE SHEETS ====================
     async function fetchSheetData(sheetId, sheetName, range) {
         try {
-            addDebug(`Fetching: ${sheetName}!${range}`);
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!${range}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
             
-            if (!response.ok) {
-                const error = await response.json();
-                addDebug(`Error ${response.status}: ${error.error?.message || response.statusText}`);
-                throw new Error(error.error?.message || `HTTP ${response.status}`);
-            }
-            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            addDebug(`✅ Data ${sheetName}: ${data.values?.length || 0} baris`);
             return data.values || [];
         } catch (error) {
             console.error(`Error fetching sheet ${sheetId} - ${sheetName}:`, error);
-            addDebug(`❌ ERROR: ${error.message}`);
             throw error;
         }
     }
 
     async function getSurahNames(sheetId, sheetName) {
         try {
-            addDebug('Mengambil nama surat dari baris 5...');
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A5:AQ5?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
-            
-            if (!response.ok) {
-                addDebug(`Gagal ambil nama surat: ${response.status}`);
-                return [];
-            }
-            
+            if (!response.ok) return [];
             const data = await response.json();
             const row = data.values?.[0] || [];
-            const names = row.slice(COLUMN_INDEX.QURAN.START_SURAH, COLUMN_INDEX.QURAN.START_SURAH + TARGETS.QURAN);
-            addDebug(`✅ Nama surat: ${names.filter(n => n).length} ditemukan`);
-            return names;
+            return row.slice(COLUMN_INDEX.QURAN.START_SURAH, COLUMN_INDEX.QURAN.START_SURAH + TARGETS.QURAN);
         } catch (error) {
             console.error('Error fetching surah names:', error);
-            addDebug(`❌ Error ambil nama surat: ${error.message}`);
             return [];
         }
     }
 
     function getSheetNameByClass(kelas) {
-        addDebug(`Kelas siswa: ${kelas}`);
-        
         if (!kelas) return SHEET_NAMES.X;
-        
         const kelasUpper = kelas.toUpperCase().trim();
-        
         if (kelasUpper.startsWith('XII')) return SHEET_NAMES.XII;
         if (kelasUpper.startsWith('XI')) return SHEET_NAMES.XI;
         if (kelasUpper.startsWith('X')) return SHEET_NAMES.X;
-        
         return SHEET_NAMES.X;
     }
 
@@ -752,11 +698,8 @@
             const status = row[colIndex]?.toString().toLowerCase() || '';
             const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes';
             
-            if (isHafal) {
-                hafal.push(i);
-            } else {
-                belum.push(i);
-            }
+            if (isHafal) hafal.push(i);
+            else belum.push(i);
         }
         
         const progress = (totalHafal / TARGETS.QURAN) * 100;
@@ -803,11 +746,8 @@
             const status = row[colIndex]?.toString().toLowerCase() || '';
             const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes';
             
-            if (isHafal) {
-                hafal.push(i);
-            } else {
-                belum.push(i);
-            }
+            if (isHafal) hafal.push(i);
+            else belum.push(i);
         }
         
         const progress = (totalHafal / TARGETS.HADIST) * 100;
@@ -870,7 +810,6 @@
         document.getElementById('hafalanContent').classList.add('hidden');
 
         if (!currentStudent) {
-            addDebug('ERROR: currentStudent null');
             document.getElementById('hafalanLoading').classList.add('hidden');
             document.getElementById('hafalanErrorMessage').textContent = 'Siswa tidak ditemukan';
             document.getElementById('hafalanError').classList.remove('hidden');
@@ -884,21 +823,15 @@
                 surahNames = await getSurahNames(SHEET_IDS.QURAN, kelasSheet);
             }
             
-            addDebug('Mengambil data Quran...');
             let quranData = [];
             try {
                 quranData = await fetchSheetData(SHEET_IDS.QURAN, kelasSheet, "A6:AQ");
-            } catch (error) {
-                addDebug(`Gagal ambil data Quran: ${error.message}`);
-            }
+            } catch (error) {}
             
-            addDebug('Mengambil data Hadist...');
             let hadistData = [];
             try {
                 hadistData = await fetchSheetData(SHEET_IDS.HADIST, kelasSheet, "A6:AQ");
-            } catch (error) {
-                addDebug(`Gagal ambil data Hadist: ${error.message}`);
-            }
+            } catch (error) {}
 
             document.getElementById('hafalanLoading').classList.add('hidden');
 
@@ -908,16 +841,9 @@
                     return rowNis === currentStudent.nis.toString().trim();
                 });
                 
-                if (studentRow) {
-                    addDebug('✅ Data Quran ditemukan');
-                    processQuranData(studentRow);
-                } else {
-                    addDebug('❌ Data Quran tidak ditemukan');
-                    resetQuranData();
-                }
-            } else {
-                resetQuranData();
-            }
+                if (studentRow) processQuranData(studentRow);
+                else resetQuranData();
+            } else resetQuranData();
 
             if (hadistData && hadistData.length > 0) {
                 const studentRow = hadistData.find(row => {
@@ -925,22 +851,14 @@
                     return rowNis === currentStudent.nis.toString().trim();
                 });
                 
-                if (studentRow) {
-                    addDebug('✅ Data Hadist ditemukan');
-                    processHadistData(studentRow);
-                } else {
-                    addDebug('❌ Data Hadist tidak ditemukan');
-                    resetHadistData();
-                }
-            } else {
-                resetHadistData();
-            }
+                if (studentRow) processHadistData(studentRow);
+                else resetHadistData();
+            } else resetHadistData();
 
             document.getElementById('hafalanContent').classList.remove('hidden');
 
         } catch (error) {
             console.error('Error:', error);
-            addDebug(`🔥 ERROR: ${error.message}`);
             document.getElementById('hafalanLoading').classList.add('hidden');
             document.getElementById('hafalanErrorMessage').textContent = error.message;
             document.getElementById('hafalanError').classList.remove('hidden');
@@ -952,16 +870,8 @@
     }
 
     // ==================== FUNGSI PELANGGARAN ====================
-    async function loadPelanggaran(useCache = true) {
+    async function loadPelanggaran() {
         if (!currentStudent) return;
-        
-        if (useCache && pelanggaranCache) {
-            const siswaPelanggaran = pelanggaranCache.filter(p => p.student_id === currentStudent.id);
-            const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
-            document.getElementById('totalPoin').textContent = totalPoin;
-            renderPelanggaranList(siswaPelanggaran);
-            return;
-        }
         
         document.getElementById('pelanggaranLoading')?.classList.remove('hidden');
         
@@ -977,7 +887,6 @@
                 } else {
                     pelanggaranRecords = Array.isArray(data) ? data : [];
                 }
-                pelanggaranCache = pelanggaranRecords;
             } else {
                 pelanggaranRecords = [];
             }
@@ -985,6 +894,7 @@
             document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
             const siswaPelanggaran = pelanggaranRecords.filter(p => p.student_id === currentStudent.id);
+            
             const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
             document.getElementById('totalPoin').textContent = totalPoin;
             
@@ -1017,10 +927,7 @@
         const totalPoin = pelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
         totalPoinEl.textContent = totalPoin;
         
-        // Virtual scrolling - hanya render 30 baris pertama
-        const displayPelanggaran = pelanggaran.slice(0, 30);
-        
-        listEl.innerHTML = displayPelanggaran.map(p => {
+        listEl.innerHTML = pelanggaran.map(p => {
             let badgeClass = 'pelanggaran-ringan';
             if (p.poin >= 20) badgeClass = 'pelanggaran-berat';
             else if (p.poin >= 10) badgeClass = 'pelanggaran-sedang';
@@ -1044,18 +951,7 @@
     }
 
     // ==================== FUNGSI JSONBIN ====================
-    async function loadData(useCache = true) {
-        if (useCache && studentsCache && attendanceCache) {
-            students = studentsCache;
-            attendanceRecords = attendanceCache;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
-            if (currentStudent) {
-                loadAttendance();
-                debouncedUpdateYearOptions();
-            }
-            return;
-        }
-        
+    async function loadData() {
         try {
             const [studentsRes, attendanceRes] = await Promise.all([
                 fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.STUDENTS}/latest`, {
@@ -1071,15 +967,12 @@
 
             if (!Array.isArray(students)) students = [];
             if (!Array.isArray(attendanceRecords)) attendanceRecords = [];
-            
-            studentsCache = students;
-            attendanceCache = attendanceRecords;
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
             if (currentStudent) {
                 loadAttendance();
-                debouncedUpdateYearOptions();
+                updateYearOptions();
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -1087,7 +980,6 @@
         }
     }
 
-    // ==================== FUNGSI UPDATE TAHUN DINAMIS ====================
     function updateYearOptions() {
         if (!currentStudent || !attendanceRecords.length) return;
         
@@ -1112,15 +1004,13 @@
         });
         
         yearSelect.innerHTML = options;
-        
-        addDebug(`Pilihan tahun diperbarui: ${sortedYears.join(', ')}`);
     }
 
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
-            loadData(false);
-            if (currentStudent) loadPelanggaran(false);
+            loadData();
+            if (currentStudent) loadPelanggaran();
         }, 30000);
     }
 
@@ -1164,7 +1054,7 @@
             return;
         }
 
-        await loadData(false);
+        await loadData();
 
         const student = students.find(s => s.nis === nis);
         if (!student) {
@@ -1194,7 +1084,7 @@
 
         loadAttendance();
         await loadHafalanProgress();
-        await loadPelanggaran(false);
+        await loadPelanggaran();
         updateYearOptions();
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
@@ -1242,11 +1132,8 @@
             `;
             return;
         }
-        
-        // Virtual scrolling - hanya render 30 baris pertama
-        const displayRecords = filtered.slice(0, 30);
 
-        list.innerHTML = displayRecords.map(r => {
+        list.innerHTML = filtered.map(r => {
             const date = new Date(r.tanggal);
             const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
             const formattedDate = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -1263,26 +1150,46 @@
                 manual: 'fa-pen'
             };
 
+            const locationStatus = r.location ? getLocationStatus(r.location.lat, r.location.lng) : null;
+
             return `
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
+                <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
                             <span class="text-sm font-medium text-gray-800">${dayName}, ${formattedDate}</span>
-                            <span class="text-xs text-gray-500">
+                            <span class="text-xs text-gray-500 ml-2">
                                 <i class="fas fa-clock mr-1"></i>${formatTime(r.timestamp)}
                             </span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="status-badge ${statusColors[r.status]}">
-                                ${r.status.toUpperCase()}
-                            </span>
-                            <span class="text-xs text-gray-500">
-                                <i class="fas ${metodeIcon[r.metode] || 'fa-question'} mr-1"></i>
-                                ${r.metode || 'manual'}
-                            </span>
-                        </div>
-                        ${r.keterangan ? `<p class="text-xs text-gray-500 mt-1">📝 ${r.keterangan}</p>` : ''}
+                        <span class="status-badge ${statusColors[r.status]}">
+                            ${r.status.toUpperCase()}
+                        </span>
                     </div>
+                    
+                    <div class="flex items-center gap-3 text-sm">
+                        <span class="text-xs text-gray-500">
+                            <i class="fas ${metodeIcon[r.metode] || 'fa-question'} mr-1"></i>
+                            ${r.metode || 'manual'}
+                        </span>
+                        
+                        ${r.location ? `
+                            <span class="location-badge ${locationStatus.class}">
+                                <i class="fas fa-map-pin mr-1"></i>${locationStatus.text}
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    ${r.location ? `
+                        <div class="location-info mt-2">
+                            <div class="text-xs text-gray-600">
+                                <i class="fas fa-crosshairs mr-1"></i>
+                                ${r.location.lat.toFixed(6)}, ${r.location.lng.toFixed(6)}
+                                <span class="text-gray-400 ml-2">Akurasi: ±${Math.round(r.location.accuracy)}m</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${r.keterangan ? `<p class="text-xs text-gray-500 mt-2">📝 ${r.keterangan}</p>` : ''}
                 </div>
             `;
         }).join('');
@@ -1301,10 +1208,6 @@
         document.getElementById('loginNis').value = '';
         document.getElementById('loginPassword').value = '';
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // Tidak perlu set default tahun di sini karena akan dinamis
-    });
   </script>
 </body>
 </html>
