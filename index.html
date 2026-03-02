@@ -16,7 +16,7 @@
     }
     
     .animate-fadeIn {
-      animation: fadeIn 0.3s ease-out;
+      animation: fadeIn 0.2s ease-out;
     }
     
     .toast {
@@ -27,8 +27,9 @@
       border-radius: 12px;
       color: white;
       z-index: 9999;
-      animation: fadeIn 0.3s ease-out;
+      animation: fadeIn 0.2s ease-out;
       max-width: 400px;
+      will-change: transform, opacity;
     }
     
     .toast-success { background: #10b981; }
@@ -81,7 +82,13 @@
     .hafalan-card {
       background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
       border-left: 4px solid #10b981;
-      transition: all 0.3s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      will-change: transform;
+    }
+    
+    .hafalan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
     }
     
     .hafalan-progress {
@@ -107,6 +114,7 @@
       border: 1px solid #e5e7eb;
       font-size: 11px;
       margin-bottom: 4px;
+      transition: transform 0.1s ease;
     }
     
     .surah-item.hafal {
@@ -182,6 +190,13 @@
       max-height: 300px;
       overflow-y: auto;
       padding-right: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .virtual-scroll-container {
+      max-height: 400px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     
     .test-btn {
@@ -192,10 +207,20 @@
       font-size: 12px;
       margin-top: 8px;
       cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    
+    .test-btn:hover {
+      transform: translateY(-1px);
     }
     
     .pelanggaran-item {
       border-left: 4px solid #f59e0b;
+      transition: transform 0.1s ease;
+    }
+    
+    .pelanggaran-item:hover {
+      transform: translateX(2px);
     }
   </style>
 </head>
@@ -495,7 +520,7 @@
             <option value="">Semua Tahun</option>
           </select>
           
-          <button onclick="loadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
+          <button onclick="debouncedLoadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
             <i class="fas fa-search"></i>
             <span class="hidden sm:inline">Filter</span>
           </button>
@@ -510,8 +535,10 @@
             Riwayat Absensi
           </h3>
         </div>
-        <div id="attendanceList" class="p-4 max-h-96 overflow-y-auto custom-scrollbar space-y-2">
-          <!-- akan diisi oleh JavaScript -->
+        <div class="virtual-scroll-container">
+          <div id="attendanceList" class="p-4 space-y-2">
+            <!-- akan diisi oleh JavaScript -->
+          </div>
         </div>
       </div>
 
@@ -573,6 +600,7 @@
         }
     };
 
+    // ==================== STATE & CACHE ====================
     let students = [];
     let attendanceRecords = [];
     let pelanggaranRecords = [];
@@ -580,6 +608,40 @@
     let refreshInterval = null;
     let debugMode = false;
     let surahNames = [];
+    
+    // Cache untuk performa
+    let studentsCache = null;
+    let attendanceCache = null;
+    let pelanggaranCache = null;
+
+    // ==================== FUNGSI UTILITY ====================
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // Debounced functions
+    const debouncedLoadAttendance = debounce(() => loadAttendance(), 100);
+    const debouncedRenderPelanggaran = debounce(() => renderPelanggaranList(), 100);
+    const debouncedUpdateYearOptions = debounce(() => updateYearOptions(), 100);
 
     // ==================== FUNGSI DEBUG ====================
     function toggleDebug() {
@@ -890,8 +952,16 @@
     }
 
     // ==================== FUNGSI PELANGGARAN ====================
-    async function loadPelanggaran() {
+    async function loadPelanggaran(useCache = true) {
         if (!currentStudent) return;
+        
+        if (useCache && pelanggaranCache) {
+            const siswaPelanggaran = pelanggaranCache.filter(p => p.student_id === currentStudent.id);
+            const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
+            document.getElementById('totalPoin').textContent = totalPoin;
+            renderPelanggaranList(siswaPelanggaran);
+            return;
+        }
         
         document.getElementById('pelanggaranLoading')?.classList.remove('hidden');
         
@@ -907,20 +977,17 @@
                 } else {
                     pelanggaranRecords = Array.isArray(data) ? data : [];
                 }
+                pelanggaranCache = pelanggaranRecords;
             } else {
                 pelanggaranRecords = [];
             }
             
             document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
-            // Filter pelanggaran untuk siswa ini
             const siswaPelanggaran = pelanggaranRecords.filter(p => p.student_id === currentStudent.id);
-            
-            // Update statistik poin
             const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
             document.getElementById('totalPoin').textContent = totalPoin;
             
-            // Tampilkan list pelanggaran
             renderPelanggaranList(siswaPelanggaran);
             
         } catch (error) {
@@ -945,16 +1012,15 @@
         emptyEl.classList.add('hidden');
         summaryEl.classList.remove('hidden');
         
-        // Urutkan dari yang terbaru
         pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
         
-        // Hitung total poin
         const totalPoin = pelanggaran.reduce((sum, p) => sum + (p.poin || 0), 0);
         totalPoinEl.textContent = totalPoin;
         
-        // Render list
-        listEl.innerHTML = pelanggaran.map(p => {
-            // Tentukan kelas badge berdasarkan poin
+        // Virtual scrolling - hanya render 30 baris pertama
+        const displayPelanggaran = pelanggaran.slice(0, 30);
+        
+        listEl.innerHTML = displayPelanggaran.map(p => {
             let badgeClass = 'pelanggaran-ringan';
             if (p.poin >= 20) badgeClass = 'pelanggaran-berat';
             else if (p.poin >= 10) badgeClass = 'pelanggaran-sedang';
@@ -978,7 +1044,18 @@
     }
 
     // ==================== FUNGSI JSONBIN ====================
-    async function loadData() {
+    async function loadData(useCache = true) {
+        if (useCache && studentsCache && attendanceCache) {
+            students = studentsCache;
+            attendanceRecords = attendanceCache;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+            if (currentStudent) {
+                loadAttendance();
+                debouncedUpdateYearOptions();
+            }
+            return;
+        }
+        
         try {
             const [studentsRes, attendanceRes] = await Promise.all([
                 fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.STUDENTS}/latest`, {
@@ -994,12 +1071,15 @@
 
             if (!Array.isArray(students)) students = [];
             if (!Array.isArray(attendanceRecords)) attendanceRecords = [];
+            
+            studentsCache = students;
+            attendanceCache = attendanceRecords;
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
             if (currentStudent) {
                 loadAttendance();
-                updateYearOptions();
+                debouncedUpdateYearOptions();
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -1039,8 +1119,8 @@
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
-            loadData();
-            if (currentStudent) loadPelanggaran();
+            loadData(false);
+            if (currentStudent) loadPelanggaran(false);
         }, 30000);
     }
 
@@ -1084,7 +1164,7 @@
             return;
         }
 
-        await loadData();
+        await loadData(false);
 
         const student = students.find(s => s.nis === nis);
         if (!student) {
@@ -1114,7 +1194,7 @@
 
         loadAttendance();
         await loadHafalanProgress();
-        await loadPelanggaran();
+        await loadPelanggaran(false);
         updateYearOptions();
         startAutoRefresh();
         showToast(`Selamat datang, ${student.nama}`, 'success');
@@ -1162,8 +1242,11 @@
             `;
             return;
         }
+        
+        // Virtual scrolling - hanya render 30 baris pertama
+        const displayRecords = filtered.slice(0, 30);
 
-        list.innerHTML = filtered.map(r => {
+        list.innerHTML = displayRecords.map(r => {
             const date = new Date(r.tanggal);
             const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
             const formattedDate = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
