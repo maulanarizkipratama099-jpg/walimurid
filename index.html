@@ -12,110 +12,566 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { font-family: 'Inter', sans-serif; }
     
-    /* ... (style lainnya sama seperti sebelumnya, tambahkan:) */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     
-    .attendance-type {
-      padding: 4px 8px;
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 16px 24px;
       border-radius: 12px;
-      font-size: 10px;
+      color: white;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease-out;
+      max-width: 400px;
+    }
+    
+    .toast-success { background: #10b981; }
+    .toast-error { background: #ef4444; }
+    .toast-info { background: #3b82f6; }
+    
+    .student-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
       font-weight: 600;
     }
-    .attendance-type.masuk {
+    
+    .status-hadir { background: #d1fae5; color: #059669; }
+    .status-pulang { background: #dbeafe; color: #1e40af; }
+    .status-izin { background: #fef3c7; color: #b45309; }
+    .status-sakit { background: #fee2e2; color: #dc2626; }
+    .status-absen { background: #f3f4f6; color: #6b7280; }
+    
+    .location-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .location-valid {
       background: #d1fae5;
       color: #059669;
     }
-    .attendance-type.pulang {
+    
+    .location-invalid {
       background: #fee2e2;
       color: #dc2626;
     }
     
-    .map-thumbnail {
-      width: 80px;
-      height: 60px;
-      border-radius: 8px;
-      cursor: pointer;
-      object-fit: cover;
-      border: 2px solid #3b82f6;
-      transition: transform 0.2s ease;
-    }
-    .map-thumbnail:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    .pelanggaran-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
     }
     
-    .map-large {
-      width: 100%;
-      height: 250px;
-      border-radius: 16px;
-      margin: 16px 0;
-      border: 2px solid #e5e7eb;
+    .pelanggaran-ringan {
+      background: #fef3c7;
+      color: #b45309;
     }
     
-    .attendance-card {
+    .pelanggaran-sedang {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .pelanggaran-berat {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    
+    .hafalan-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
+      border-left: 4px solid #10b981;
       transition: all 0.3s ease;
-      cursor: pointer;
-    }
-    .attendance-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
     
-    /* Modal Map */
-    #mapModal {
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(5px);
+    .hafalan-progress {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
     }
-    .modal-content {
+    
+    .hafalan-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    
+    .surah-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    
+    .surah-item.hafal {
+      border-left: 3px solid #10b981;
+    }
+    
+    .surah-item.belum {
+      border-left: 3px solid #ef4444;
+      opacity: 0.6;
+    }
+    
+    .surah-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    
+    .surah-number.hafal {
+      background: #d1fae5;
+      color: #059669;
+    }
+    
+    .surah-number.belum {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .surah-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .debug-info {
+      background: #1e1e2f;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .debug-info.visible {
+      display: block;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 2px;
+    }
+    
+    .list-container {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    
+    .map-container {
+      width: 100%;
+      height: 200px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+    }
+    
+    .map-container iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    
+    .location-info {
+      background: #f0f9ff;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    
+    .expand-map-btn {
+      background: #3b82f6;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    
+    .expand-map-btn:hover {
+      background: #2563eb;
+    }
+    
+    .modal-map {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 9999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .modal-map.active {
+      display: flex;
+    }
+    
+    .modal-map-content {
+      width: 100%;
       max-width: 800px;
-      width: 90%;
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+    }
+    
+    .modal-map-content iframe {
+      width: 100%;
+      height: 400px;
+      border-radius: 12px;
     }
   </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans antialiased">
-  <!-- Login Screen (sama seperti sebelumnya) -->
+  <!-- Login Screen -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <!-- ... (sama) ... -->
+    <div class="max-w-md w-full bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 animate-fadeIn">
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-xl">
+          <i class="fas fa-user-graduate text-white text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800">Portal Wali Murid</h1>
+        <p class="text-gray-500">MAS IBNU HUSAIN</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">NIS Anak</label>
+          <input type="text" id="loginNis" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan NIS">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" id="loginPassword" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan password">
+        </div>
+        <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
+          <i class="fas fa-sign-in-alt mr-2"></i> Lihat Absensi & Hafalan
+        </button>
+      </div>
+      
+      <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+        <p class="text-xs text-blue-700 text-center">
+          <i class="fas fa-info-circle mr-1"></i>
+          Demo: USERNAME: NIS, PASSWORD: MASIBNUHUSAIN
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Dashboard Screen -->
   <div id="dashboardScreen" class="hidden p-4">
     <div class="max-w-4xl mx-auto">
-      <!-- Header (sama) -->
+      <!-- Header with Photo -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
-        <!-- ... (sama) ... -->
+        <div class="flex items-center gap-4">
+          <div id="studentPhotoContainer" class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg overflow-hidden">
+            <img id="studentPhoto" src="" alt="Foto Siswa" class="w-full h-full object-cover hidden">
+            <i id="studentPhotoIcon" class="fas fa-child text-3xl"></i>
+          </div>
+          <div class="flex-1">
+            <h2 id="studentName" class="text-2xl font-bold"></h2>
+            <p id="studentClass" class="text-white/80 text-sm"></p>
+            <p id="studentNis" class="text-white/60 text-xs mt-1"></p>
+          </div>
+          <button onclick="logout()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition text-sm flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Stats Cards (sama) -->
-      <div class="grid grid-cols-4 gap-3 mb-6">
-        <!-- ... (sama) ... -->
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-5 gap-2 mb-6">
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-xl font-bold text-green-600" id="statHadir">0</div>
+          <div class="text-xs text-gray-500 mt-1">Hadir</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-xl font-bold text-blue-600" id="statPulang">0</div>
+          <div class="text-xs text-gray-500 mt-1">Pulang</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-xl font-bold text-yellow-600" id="statIzin">0</div>
+          <div class="text-xs text-gray-500 mt-1">Izin</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-xl font-bold text-red-600" id="statSakit">0</div>
+          <div class="text-xs text-gray-500 mt-1">Sakit</div>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm hover:shadow-md transition">
+          <div class="text-xl font-bold text-orange-600" id="totalPoin">0</div>
+          <div class="text-xs text-gray-500 mt-1">Poin</div>
+        </div>
       </div>
 
-      <!-- Persentase Card (sama) -->
+      <!-- Persentase Card -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
-        <!-- ... (sama) ... -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-800">Tingkat Kehadiran</h3>
+          <span class="text-2xl font-bold text-blue-600" id="persentase">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+          <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
       </div>
 
-      <!-- Informasi Lokasi Sekolah (sama) -->
+      <!-- Informasi Lokasi Sekolah -->
       <div class="bg-white rounded-xl p-4 mb-6 shadow-sm">
-        <!-- ... (sama) ... -->
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <i class="fas fa-map-marker-alt text-red-500"></i>
+          <span>Lokasi Sekolah: Jl. Irawati 1 No. 15-17, Surabaya</span>
+          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-auto">Radius 100m</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-1">
+          <i class="fas fa-crosshairs mr-1"></i>Koordinat: -7.230636, 112.749601
+        </div>
       </div>
 
-      <!-- ========== PROGRES HAFALAN SECTION ========== (sama) -->
+      <!-- ========== PROGRES HAFALAN SECTION ========== -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
-        <!-- ... (sama) ... -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-book-open text-green-600"></i>
+            Progres Hafalan
+          </h3>
+          <button onclick="testGoogleSheet()" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">
+            Test Koneksi
+          </button>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="hafalanLoading" class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-green-600 text-2xl mb-2"></i>
+          <p class="text-gray-600">Memuat data hafalan...</p>
+          <p class="text-xs text-gray-400 mt-2">Jika terlalu lama, cek koneksi</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="hafalanError" class="hidden text-center py-6 text-red-600 bg-red-50 rounded-xl">
+          <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+          <p id="hafalanErrorMessage" class="font-medium">Gagal memuat data</p>
+          <button onclick="retryLoadHafalan()" class="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition">
+            Coba Lagi
+          </button>
+        </div>
+        
+        <!-- Content State -->
+        <div id="hafalanContent" class="hidden space-y-6">
+          
+          <!-- HAFALAN QURAN -->
+          <div class="hafalan-card rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-quran text-green-600"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800">Hafalan Quran</h4>
+              </div>
+              <span id="quranStats" class="text-sm font-bold text-green-600">-</span>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="bg-green-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Surat Terakhir</div>
+                <div id="quranLastSurah" class="font-bold text-green-600">-</div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Total Hafal</div>
+                <div id="quranTotalHafal" class="font-bold text-green-600">-</div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Progress</div>
+                <div id="quranProgressPercent" class="font-bold text-green-600">-</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="hafalan-progress">
+                <div id="quranProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                  Sudah Hafal (<span id="quranHafalCount">0</span>)
+                </h5>
+                <div id="quranHafalList" class="list-container custom-scrollbar space-y-1"></div>
+              </div>
+              <div>
+                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                  Belum Hafal (<span id="quranBelumCount">0</span>)
+                </h5>
+                <div id="quranBelumList" class="list-container custom-scrollbar space-y-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HAFALAN HADIST -->
+          <div class="hafalan-card rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-hadith text-blue-600"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800">Hadist Arba'in</h4>
+              </div>
+              <span id="hadistStats" class="text-sm font-bold text-blue-600">-</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="bg-blue-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Hadist Terakhir</div>
+                <div id="hadistLast" class="font-bold text-blue-600">-</div>
+              </div>
+              <div class="bg-blue-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Total Hafal</div>
+                <div id="hadistTotalHafal" class="font-bold text-blue-600">-</div>
+              </div>
+              <div class="bg-blue-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-600">Progress</div>
+                <div id="hadistProgressPercent" class="font-bold text-blue-600">-</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="hafalan-progress">
+                <div id="hadistProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                  Sudah Hafal (<span id="hadistHafalCount">0</span>)
+                </h5>
+                <div id="hadistHafalList" class="list-container custom-scrollbar space-y-1"></div>
+              </div>
+              <div>
+                <h5 class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                  Belum Hafal (<span id="hadistBelumCount">0</span>)
+                </h5>
+                <div id="hadistBelumList" class="list-container custom-scrollbar space-y-1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- ========== RIWAYAT PELANGGARAN ========== (sama) -->
+      <!-- ========== RIWAYAT PELANGGARAN ========== -->
       <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
-        <!-- ... (sama) ... -->
+        <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-orange-500"></i>
+          Riwayat Pelanggaran
+        </h3>
+        
+        <div id="pelanggaranLoading" class="text-center py-4 hidden">
+          <i class="fas fa-spinner fa-spin text-orange-600 mr-2"></i>
+          <span class="text-gray-600">Memuat pelanggaran...</span>
+        </div>
+        
+        <div id="pelanggaranEmpty" class="text-center py-8 text-gray-500 hidden">
+          <i class="fas fa-check-circle text-4xl text-green-300 mb-2"></i>
+          <p>Tidak ada catatan pelanggaran</p>
+        </div>
+        
+        <div id="pelanggaranList" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2"></div>
+        
+        <div id="pelanggaranSummary" class="mt-4 p-3 bg-orange-50 rounded-lg text-sm hidden">
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-orange-700">Total Poin Pelanggaran:</span>
+            <span id="totalPoinPelanggaran" class="font-bold text-orange-700 text-lg">0</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Filter (sama) -->
+      <!-- Filter -->
       <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
-        <!-- ... (sama) ... -->
+        <div class="flex flex-wrap gap-2">
+          <select id="monthFilter" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <option value="">Semua Bulan</option>
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maret</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Agustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+          
+          <select id="yearFilter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <option value="">Semua Tahun</option>
+          </select>
+          
+          <button onclick="loadAttendance()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
+            <i class="fas fa-search"></i>
+            <span class="hidden sm:inline">Filter</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Attendance List dengan Map -->
+      <!-- Attendance List -->
       <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <h3 class="font-semibold text-gray-800 flex items-center gap-2">
@@ -123,7 +579,7 @@
             Riwayat Absensi dengan Peta Lokasi
           </h3>
         </div>
-        <div id="attendanceList" class="p-4 max-h-[600px] overflow-y-auto custom-scrollbar space-y-3"></div>
+        <div id="attendanceList" class="p-4 max-h-96 overflow-y-auto custom-scrollbar space-y-2"></div>
       </div>
 
       <!-- Footer -->
@@ -133,21 +589,16 @@
     </div>
   </div>
 
-  <!-- Modal Map untuk Lihat Detail -->
-  <div id="mapModal" class="hidden fixed inset-0 flex items-center justify-center z-[10000] p-4">
-    <div class="modal-content bg-white rounded-2xl p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-gray-800" id="mapModalTitle">Lokasi Absensi</h3>
+  <!-- Modal Map -->
+  <div id="mapModal" class="modal-map">
+    <div class="modal-map-content">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-lg">Peta Lokasi Absensi</h3>
         <button onclick="closeMapModal()" class="text-gray-500 hover:text-gray-700">
-          <i class="fas fa-times text-2xl"></i>
+          <i class="fas fa-times text-xl"></i>
         </button>
       </div>
-      <div id="mapModalContainer" class="w-full h-96 rounded-xl overflow-hidden"></div>
-      <div id="mapModalInfo" class="mt-4 text-sm text-gray-600 bg-blue-50 p-4 rounded-xl"></div>
-      <button onclick="openInGoogleMaps()" class="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2">
-        <i class="fab fa-google"></i>
-        Buka di Google Maps
-      </button>
+      <div id="modalMapContainer"></div>
     </div>
   </div>
 
@@ -167,7 +618,7 @@
     };
 
     // KONFIGURASI GOOGLE SHEETS
-    const GOOGLE_API_KEY = "AIzaSyBX70opf2IbxQ-5XD1qAj0FkXxKmJlH4Rk";
+    const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18";
     
     const SHEET_IDS = {
         QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s",
@@ -217,43 +668,6 @@
     let refreshInterval = null;
     let debugMode = false;
     let surahNames = [];
-    
-    // State untuk modal map
-    let currentMapLocation = null;
-    let currentMapInfo = '';
-
-    // ==================== FUNGSI MODAL MAP ====================
-    function openMapModal(lat, lng, title, info) {
-        currentMapLocation = { lat, lng };
-        currentMapInfo = info;
-        
-        document.getElementById('mapModalTitle').textContent = title || 'Lokasi Absensi';
-        
-        const container = document.getElementById('mapModalContainer');
-        container.innerHTML = `<iframe 
-            width="100%" 
-            height="100%" 
-            frameborder="0" 
-            style="border:0; border-radius: 12px;" 
-            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&q=${lat},${lng}&zoom=18&maptype=satellite"
-            allowfullscreen>
-        </iframe>`;
-        
-        document.getElementById('mapModalInfo').innerHTML = info;
-        document.getElementById('mapModal').classList.remove('hidden');
-    }
-
-    function closeMapModal() {
-        document.getElementById('mapModal').classList.add('hidden');
-        document.getElementById('mapModalContainer').innerHTML = '';
-    }
-
-    function openInGoogleMaps() {
-        if (currentMapLocation) {
-            const url = `https://www.google.com/maps?q=${currentMapLocation.lat},${currentMapLocation.lng}`;
-            window.open(url, '_blank');
-        }
-    }
 
     // ==================== FUNGSI LOKASI ====================
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -287,6 +701,27 @@
             class: withinRadius ? 'location-valid' : 'location-invalid',
             distance: Math.round(distance)
         };
+    }
+
+    // Fungsi untuk membuka modal peta
+    function openMapModal(lat, lng, label) {
+        const modal = document.getElementById('mapModal');
+        const container = document.getElementById('modalMapContainer');
+        
+        container.innerHTML = `<iframe 
+            width="100%" 
+            height="400" 
+            frameborder="0" 
+            style="border:0; border-radius: 12px;" 
+            src="https://www.google.com/maps/embed/v1/view?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&center=${lat},${lng}&zoom=16&maptype=roadmap"
+            allowfullscreen>
+        </iframe>`;
+        
+        modal.classList.add('active');
+    }
+
+    function closeMapModal() {
+        document.getElementById('mapModal').classList.remove('active');
     }
 
     // ==================== FUNGSI TEST KONEKSI ====================
@@ -748,7 +1183,6 @@
         showToast(`Selamat datang, ${student.nama}`, 'success');
     }
 
-    // FUNGSI UTAMA: loadAttendance dengan Map
     function loadAttendance() {
         const month = document.getElementById('monthFilter').value;
         const year = document.getElementById('yearFilter').value;
@@ -765,18 +1199,19 @@
 
         filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
 
-        // Hitung statistik dengan memisahkan masuk dan pulang
         const stats = {
-            hadir: filtered.filter(r => r.status === 'hadir' && r.type === 'masuk').length,
-            pulang: filtered.filter(r => r.status === 'hadir' && r.type === 'pulang').length,
+            hadir: filtered.filter(r => r.status === 'hadir').length,
+            pulang: filtered.filter(r => r.status === 'pulang').length,
             izin: filtered.filter(r => r.status === 'izin').length,
             sakit: filtered.filter(r => r.status === 'sakit').length
         };
 
-        const total = filtered.length;
-        const persentase = total > 0 ? ((stats.hadir / total) * 100).toFixed(1) : 0;
+        const totalKehadiran = filtered.filter(r => r.status === 'hadir').length;
+        const totalHari = filtered.length;
+        const persentase = totalHari > 0 ? ((totalKehadiran / totalHari) * 100).toFixed(1) : 0;
 
         document.getElementById('statHadir').textContent = stats.hadir;
+        document.getElementById('statPulang').textContent = stats.pulang;
         document.getElementById('statIzin').textContent = stats.izin;
         document.getElementById('statSakit').textContent = stats.sakit;
         document.getElementById('persentase').textContent = `${persentase}%`;
@@ -801,6 +1236,7 @@
             
             const statusColors = {
                 hadir: 'status-hadir',
+                pulang: 'status-pulang',
                 izin: 'status-izin',
                 sakit: 'status-sakit',
                 absen: 'status-absen'
@@ -812,19 +1248,9 @@
             };
 
             const locationStatus = r.location ? getLocationStatus(r.location.lat, r.location.lng) : null;
-            const typeClass = r.type === 'pulang' ? 'attendance-type pulang' : 'attendance-type masuk';
-            const typeText = r.type === 'pulang' ? 'PULANG' : 'HADIR';
-            
-            const mapThumbnail = r.location ? 
-                `https://maps.googleapis.com/maps/api/staticmap?center=${r.location.lat},${r.location.lng}&zoom=16&size=80x60&maptype=roadmap&markers=color:red%7C${r.location.lat},${r.location.lng}&key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18` : 
-                null;
 
             return `
-                <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition attendance-card" 
-                     onclick='openMapModal(${r.location?.lat || 0}, ${r.location?.lng || 0}, 
-                        "Lokasi Absensi ${r.student_nama}", 
-                        "<b>${r.student_nama}</b><br>${dayName}, ${formattedDate}<br>${typeText} - ${r.status.toUpperCase()}<br>${locationStatus?.text || "Tidak ada lokasi"}<br>Waktu: ${formatTime(r.timestamp)}")'>
-                    
+                <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
                     <div class="flex items-center justify-between mb-2">
                         <div>
                             <span class="text-sm font-medium text-gray-800">${dayName}, ${formattedDate}</span>
@@ -832,15 +1258,12 @@
                                 <i class="fas fa-clock mr-1"></i>${formatTime(r.timestamp)}
                             </span>
                         </div>
-                        <div class="flex gap-2">
-                            <span class="${typeClass}">${typeText}</span>
-                            <span class="status-badge ${statusColors[r.status]}">
-                                ${r.status.toUpperCase()}
-                            </span>
-                        </div>
+                        <span class="status-badge ${statusColors[r.status]}">
+                            ${r.status.toUpperCase()}
+                        </span>
                     </div>
                     
-                    <div class="flex items-center gap-3 text-sm">
+                    <div class="flex items-center gap-3 text-sm flex-wrap">
                         <span class="text-xs text-gray-500">
                             <i class="fas ${metodeIcon[r.metode] || 'fa-question'} mr-1"></i>
                             ${r.metode || 'manual'}
@@ -851,26 +1274,36 @@
                                 <i class="fas fa-map-pin mr-1"></i>${locationStatus.text}
                             </span>
                         ` : ''}
+                        
+                        ${r.location ? `
+                            <button onclick="openMapModal(${r.location.lat}, ${r.location.lng}, '${r.student_nama}')" 
+                                    class="expand-map-btn">
+                                <i class="fas fa-map-marked-alt mr-1"></i>Lihat Peta
+                            </button>
+                        ` : ''}
                     </div>
                     
                     ${r.location ? `
-                        <div class="flex items-center gap-3 mt-3">
-                            <img src="${mapThumbnail}" 
-                                 class="map-thumbnail" 
-                                 onclick="event.stopPropagation(); openMapModal(${r.location.lat}, ${r.location.lng}, 
-                                    'Lokasi Absensi ${r.student_nama}', 
-                                    '<b>${r.student_nama}</b><br>${dayName}, ${formattedDate}<br>${typeText} - ${r.status.toUpperCase()}<br>${locationStatus.text}<br>Koordinat: ${r.location.lat.toFixed(6)}, ${r.location.lng.toFixed(6)}<br>Akurasi: ±${Math.round(r.location.accuracy)}m')"
-                                 title="Klik untuk lihat peta">
-                            
-                            <div class="flex-1 text-xs text-gray-600">
+                        <div class="location-info mt-2">
+                            <div class="text-xs text-gray-600 flex items-center gap-2">
                                 <i class="fas fa-crosshairs mr-1"></i>
                                 ${r.location.lat.toFixed(6)}, ${r.location.lng.toFixed(6)}
-                                <span class="text-gray-400 block mt-1">Akurasi: ±${Math.round(r.location.accuracy)}m</span>
+                                <span class="text-gray-400">Akurasi: ±${Math.round(r.location.accuracy)}m</span>
+                            </div>
+                            <div class="mt-1 map-container" style="height: 150px;">
+                                <iframe 
+                                    width="100%" 
+                                    height="150" 
+                                    frameborder="0" 
+                                    style="border:0; border-radius: 8px;" 
+                                    src="https://www.google.com/maps/embed/v1/view?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&center=${r.location.lat},${r.location.lng}&zoom=15&maptype=roadmap"
+                                    allowfullscreen>
+                                </iframe>
                             </div>
                         </div>
                     ` : ''}
                     
-                    ${r.keterangan ? `<p class="text-xs text-gray-500 mt-2 border-t pt-2">📝 ${r.keterangan}</p>` : ''}
+                    ${r.keterangan ? `<p class="text-xs text-gray-500 mt-2">📝 ${r.keterangan}</p>` : ''}
                 </div>
             `;
         }).join('');
