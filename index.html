@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Wali Murid | MAS IBNU HUSAIN </title>
+  <title>Pantau Absensi & Hafalan | Wali Murid</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- Google Maps API -->
@@ -566,7 +566,7 @@
         </div>
       </div>
 
-      <!-- Catatan dari Sekolah -->
+      <!-- Catatan dari Sekolah (di-load dari JSONBin) -->
       <div id="noteCard" class="glass-card p-6 hidden">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
@@ -575,7 +575,7 @@
           </h3>
           <span id="noteDate" class="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full"></span>
         </div>
-        <div id="noteContent" class="note-card p-5">
+        <div id="noteContent" class="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-5 border-l-4 border-[#d4af37]">
           <p class="text-gray-700 whitespace-pre-line"></p>
         </div>
       </div>
@@ -871,7 +871,8 @@
             STUDENTS: "699ffd15ae596e708f4b42a4",
             ATTENDANCE: "69a57b3243b1c97be9abe8ac",
             PELANGGARAN: "69a3f6e5d0ea881f40e42434",
-            CONFIG: "69a748b1d0ea881f40ebb17c"
+            CONFIG: "69a748b1d0ea881f40ebb17c",
+            NOTES: "67c8f1d18a456b7966f2d456" // Bin untuk catatan siswa (sama dengan admin)
         },
         BASE_URL: "https://api.jsonbin.io/v3/b"
     };
@@ -1009,7 +1010,7 @@
                     { progress: 20, text: 'Menyiapkan portal...' },
                     { progress: 40, text: 'Memuat data siswa...' },
                     { progress: 60, text: 'Menyiapkan hafalan...' },
-                    { progress: 80, text: 'Memuat riwayat...' },
+                    { progress: 80, text: 'Memuat catatan...' },
                     { progress: 100, text: 'Siap! Mengalihkan...' }
                 ];
                 
@@ -1314,15 +1315,22 @@
         loadHafalanProgress();
     }
 
-    // ==================== FUNGSI CATATAN SISWA ====================
+    // ==================== FUNGSI CATATAN SISWA (LOAD DARI JSONBIN) ====================
     async function loadStudentNotes() {
         try {
-            const saved = localStorage.getItem('studentNotes');
-            if (saved) {
-                studentNotes = JSON.parse(saved);
+            const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.NOTES}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'X-Bin-Meta': 'false' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                studentNotes = Array.isArray(data) ? data : [];
+            } else {
+                studentNotes = [];
             }
+            console.log('✅ Loaded notes:', studentNotes.length);
         } catch (error) {
-            console.error('Error loading notes:', error);
+            console.error('Gagal load catatan:', error);
             studentNotes = [];
         }
     }
@@ -1338,7 +1346,7 @@
         
         if (note) {
             noteDate.textContent = note.updated_at ? 
-                `Diperbarui: ${new Date(note.updated_at).toLocaleDateString('id-ID')}` : 
+                `Diperbarui: ${new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}` : 
                 '';
             noteContent.textContent = note.note;
             noteCard.classList.remove('hidden');
@@ -1489,7 +1497,11 @@
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
             loadData();
-            if (currentStudent) loadPelanggaran();
+            loadStudentNotes(); // Refresh catatan setiap 30 detik
+            if (currentStudent) {
+                loadPelanggaran();
+                renderStudentNote();
+            }
         }, 30000);
     }
 
@@ -1677,6 +1689,7 @@
         currentStudent = null;
         surahNames = [];
         pelanggaranRecords = [];
+        studentNotes = [];
         document.getElementById('dashboardScreen').classList.add('hidden');
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('loginNis').value = '';
@@ -1706,4 +1719,3 @@
   </script>
 </body>
 </html>
-
