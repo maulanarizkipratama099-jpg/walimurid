@@ -865,11 +865,10 @@
   </style>
 
   <script>
-    // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
-    // PASTIKAN ANDA MENGGANTI URL INI DENGAN URL APPS SCRIPT BARU SETELAH DEPLOY
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
+    // ==================== KONFIGURASI APPS SCRIPT ====================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsNHWFkOJ3u-Vuz30PN0o8xFQwnCadBqZcSSBsj9AZ-XJ4lBGLDNvuZEn_xLJax0Zk/exec";
 
-    // Sheet names (sama dengan aplikasi siswa)
+    // Sheet names
     const SHEET_NAMES = {
         CONFIG: "CONFIG",
         STUDENTS: "STUDENTS",
@@ -878,7 +877,7 @@
         NOTES: "NOTES"
     };
 
-    const GOOGLE_API_KEY = "AIzaSyBX70opf2IbxQ-5XD1qAj0FkXxKmJlH4Rk";
+    const GOOGLE_API_KEY = "AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18";
     
     const SHEET_IDS = {
         QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s",
@@ -925,168 +924,6 @@
         pelanggaran: null,
         notes: null
     };
-
-    // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
-    async function fetchSheetData(sheetName) {
-        // Cek cache
-        if (dataCache[sheetName.toLowerCase()]) {
-            return dataCache[sheetName.toLowerCase()];
-        }
-
-        return new Promise((resolve) => {
-            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
-            
-            window[callbackName] = function(response) {
-                console.log(`📥 Response diterima untuk ${sheetName}:`, response);
-                
-                const script = document.getElementById(callbackName);
-                if (script) script.remove();
-                
-                delete window[callbackName];
-                clearTimeout(timeout);
-                
-                if (response && response.success) {
-                    const data = response.data || [];
-                    dataCache[sheetName.toLowerCase()] = data;
-                    resolve(data);
-                } else {
-                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
-                    resolve([]);
-                }
-            };
-
-            // Timeout
-            const timeout = setTimeout(() => {
-                console.log(`⏱️ Timeout fetch ${sheetName}`);
-                if (window[callbackName]) {
-                    delete window[callbackName];
-                }
-                const script = document.getElementById(callbackName);
-                if (script) script.remove();
-                resolve([]);
-            }, 10000);
-
-            // Buat script tag
-            const actionMap = {
-                'CONFIG': 'getConfig',
-                'STUDENTS': 'getStudents',
-                'ATTENDANCE': 'getAttendance',
-                'PELANGGARAN': 'getPelanggaran',
-                'NOTES': 'getNotes'
-            };
-
-            const action = actionMap[sheetName];
-            if (!action) {
-                clearTimeout(timeout);
-                delete window[callbackName];
-                resolve([]);
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.id = callbackName;
-            script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
-            
-            script.onerror = () => {
-                console.error(`❌ Script error fetch ${sheetName}`);
-                clearTimeout(timeout);
-                if (window[callbackName]) {
-                    delete window[callbackName];
-                }
-                script.remove();
-                resolve([]);
-            };
-
-            document.body.appendChild(script);
-            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
-        });
-    }
-
-    // GET data dengan parameter (untuk filter)
-    async function fetchSheetDataWithParams(sheetName, params = {}) {
-        return new Promise((resolve) => {
-            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
-            
-            window[callbackName] = function(response) {
-                console.log(`📥 Response diterima untuk ${sheetName} (filter):`, response);
-                
-                const script = document.getElementById(callbackName);
-                if (script) script.remove();
-                
-                delete window[callbackName];
-                clearTimeout(timeout);
-                
-                if (response && response.success) {
-                    resolve(response.data || []);
-                } else {
-                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
-                    resolve([]);
-                }
-            };
-
-            const timeout = setTimeout(() => {
-                console.log(`⏱️ Timeout fetch ${sheetName} with params`);
-                if (window[callbackName]) {
-                    delete window[callbackName];
-                }
-                const script = document.getElementById(callbackName);
-                if (script) script.remove();
-                resolve([]);
-            }, 10000);
-
-            const actionMap = {
-                'PELANGGARAN': 'getPelanggaran',
-                'ATTENDANCE': 'getAttendance',
-                'NOTES': 'getNotes'
-            };
-
-            const action = actionMap[sheetName];
-            if (!action) {
-                clearTimeout(timeout);
-                delete window[callbackName];
-                resolve([]);
-                return;
-            }
-
-            // Build URL dengan parameter
-            let url = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}`;
-            Object.keys(params).forEach(key => {
-                url += `&${key}=${encodeURIComponent(params[key])}`;
-            });
-            url += `&_=${Date.now()}`;
-
-            const script = document.createElement('script');
-            script.id = callbackName;
-            script.src = url;
-            
-            script.onerror = () => {
-                console.error(`❌ Script error fetch ${sheetName} with params`);
-                clearTimeout(timeout);
-                if (window[callbackName]) {
-                    delete window[callbackName];
-                }
-                script.remove();
-                resolve([]);
-            };
-
-            document.body.appendChild(script);
-            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName} dan params`, params);
-        });
-    }
-
-    // GET config dari Google Sheets
-    async function fetchConfig() {
-        try {
-            const data = await fetchSheetData('CONFIG');
-            if (data && typeof data === 'object') {
-                return data;
-            }
-            return {};
-        } catch (error) {
-            console.error('Error fetching config:', error);
-            return {};
-        }
-    }
 
     // ==================== FUNGSI GOOGLE DRIVE UNTUK FOTO ====================
     
@@ -1247,17 +1084,175 @@
     async function testGoogleSheet() {
         showToast('Menguji koneksi ke Google Sheets...', 'info');
         try {
-            // Test koneksi ke sheet hafalan Quran
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_IDS.QURAN}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
-            if (response.ok) {
-                showToast('Koneksi ke Google Sheets berhasil!', 'success');
-            } else {
-                showToast('Gagal koneksi ke Google Sheets', 'error');
-            }
+            if (response.ok) showToast('Koneksi ke Google Sheets berhasil!', 'success');
+            else showToast('Gagal koneksi ke Google Sheets', 'error');
         } catch (error) {
             showToast('Error: ' + error.message, 'error');
         }
+    }
+
+    // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
+    async function fetchSheetData(sheetName) {
+        // Cek cache
+        if (dataCache[sheetName.toLowerCase()]) {
+            return dataCache[sheetName.toLowerCase()];
+        }
+
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    const data = response.data || [];
+                    dataCache[sheetName.toLowerCase()] = data;
+                    resolve(data);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            // Timeout
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName}`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            // Buat script tag
+            const actionMap = {
+                'CONFIG': 'getConfig',
+                'STUDENTS': 'getStudents',
+                'ATTENDANCE': 'getAttendance',
+                'PELANGGARAN': 'getPelanggaran',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName}`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
+        });
+    }
+
+    // GET config dari Google Sheets
+    async function fetchConfig() {
+        try {
+            const data = await fetchSheetData('CONFIG');
+            if (data && typeof data === 'object') {
+                return data;
+            }
+            return {};
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            return {};
+        }
+    }
+
+    // GET data dengan parameter (untuk filter)
+    async function fetchSheetDataWithParams(sheetName, params = {}) {
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName} (filter):`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    resolve(response.data || []);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName} with params`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            const actionMap = {
+                'PELANGGARAN': 'getPelanggaran',
+                'ATTENDANCE': 'getAttendance',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            // Build URL dengan parameter
+            let url = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}`;
+            Object.keys(params).forEach(key => {
+                url += `&${key}=${encodeURIComponent(params[key])}`;
+            });
+            url += `&_=${Date.now()}`;
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = url;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName} with params`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName} dan params`, params);
+        });
     }
 
     // ==================== FUNGSI GOOGLE SHEETS UNTUK HAFALAN ====================
@@ -1278,11 +1273,11 @@
                     clearTimeout(timeout);
                     
                     if (response && response.success) {
-                        console.log(`✅ Data hafalan berhasil diambil:`, response.data?.length || 0, 'baris');
-                        resolve(response.data || []);
+                        console.log(`✅ Data hafalan berhasil diambil:`, response.data?.rows?.length || 0, 'baris');
+                        resolve(response.data || { rows: [], headers: [] });
                     } else {
                         console.error(`❌ Error dari Apps Script:`, response?.error);
-                        resolve([]);
+                        resolve({ rows: [], headers: [] });
                     }
                 };
 
@@ -1293,7 +1288,7 @@
                     }
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
-                    resolve([]);
+                    resolve({ rows: [], headers: [] });
                 }, 15000);
 
                 let action = 'getHafalanQuran';
@@ -1303,7 +1298,7 @@
 
                 const script = document.createElement('script');
                 script.id = callbackName;
-                script.src = `${APPS_SCRIPT_URL}?action=${action}&sheetId=${encodeURIComponent(sheetId)}&kelas=${encodeURIComponent(kelas)}&nis=${encodeURIComponent(nis)}&callback=${callbackName}&_=${Date.now()}`;
+                script.src = `${APPS_SCRIPT_URL}?action=${action}&kelas=${encodeURIComponent(kelas)}&nis=${encodeURIComponent(nis)}&callback=${callbackName}&_=${Date.now()}`;
                 
                 script.onerror = () => {
                     console.error(`❌ Script error fetch hafalan`);
@@ -1312,7 +1307,7 @@
                         delete window[callbackName];
                     }
                     script.remove();
-                    resolve([]);
+                    resolve({ rows: [], headers: [] });
                 };
 
                 document.body.appendChild(script);
@@ -1320,7 +1315,7 @@
             });
         } catch (error) {
             console.error('Error fetchHafalanData:', error);
-            return [];
+            return { rows: [], headers: [] };
         }
     }
 
@@ -1361,7 +1356,7 @@
 
                 const script = document.createElement('script');
                 script.id = callbackName;
-                script.src = `${APPS_SCRIPT_URL}?action=getSurahNames&sheetId=${encodeURIComponent(sheetId)}&kelas=${encodeURIComponent(kelas)}&callback=${callbackName}&_=${Date.now()}`;
+                script.src = `${APPS_SCRIPT_URL}?action=getSurahNames&kelas=${encodeURIComponent(kelas)}&callback=${callbackName}&_=${Date.now()}`;
                 
                 script.onerror = () => {
                     console.error(`❌ Script error fetch nama surah`);
@@ -1385,13 +1380,13 @@
     function getSheetNameByClass(kelas) {
         if (!kelas) return "X";
         const kelasUpper = kelas.toUpperCase().trim();
-        if (kelasUpper.includes('XII')) return "XII";
-        if (kelasUpper.includes('XI')) return "XI";
-        if (kelasUpper.includes('X')) return "X";
+        if (kelasUpper.startsWith('XII')) return "XII";
+        if (kelasUpper.startsWith('XI')) return "XI";
+        if (kelasUpper.startsWith('X')) return "X";
         return "X";
     }
 
-    function processQuranData(row) {
+    function processQuranData(row, surahNames) {
         const totalHafal = parseInt(row[COLUMN_INDEX.QURAN.TOTAL_HAFALAN]) || 0;
         
         const hafal = [];
@@ -1525,25 +1520,29 @@
             console.log('📚 Kelas sheet:', kelasSheet, 'untuk siswa:', currentStudent.nama, 'kelas:', currentStudent.kelas);
             
             // Ambil nama surah dulu
-            if (surahNames.length === 0) {
+            let surahNames = [];
+            try {
                 surahNames = await getSurahNames(SHEET_IDS.QURAN, kelasSheet);
                 console.log('📖 Nama surah diterima:', surahNames.length);
+            } catch (error) {
+                console.error('Error ambil nama surah:', error);
+                surahNames = [];
             }
             
             // Ambil data hafalan Quran
-            let quranData = [];
+            let quranData = { rows: [], headers: [] };
             try {
                 quranData = await fetchHafalanData(SHEET_IDS.QURAN, kelasSheet, currentStudent.nis);
-                console.log('📊 Data Quran:', quranData.length, 'baris');
+                console.log('📊 Data Quran:', quranData.rows?.length || 0, 'baris');
             } catch (error) {
                 console.error('Error ambil data Quran:', error);
             }
             
             // Ambil data hafalan Hadist
-            let hadistData = [];
+            let hadistData = { rows: [] };
             try {
                 hadistData = await fetchHafalanData(SHEET_IDS.HADIST, kelasSheet, currentStudent.nis);
-                console.log('📊 Data Hadist:', hadistData.length, 'baris');
+                console.log('📊 Data Hadist:', hadistData.rows?.length || 0, 'baris');
             } catch (error) {
                 console.error('Error ambil data Hadist:', error);
             }
@@ -1551,9 +1550,9 @@
             document.getElementById('hafalanLoading').classList.add('hidden');
 
             // Proses data Quran
-            if (quranData && quranData.length > 0) {
+            if (quranData.rows && quranData.rows.length > 0) {
                 // Cari baris siswa berdasarkan NIS
-                const studentRow = quranData.find(row => {
+                const studentRow = quranData.rows.find(row => {
                     if (!row || row.length < 2) return false;
                     const rowNis = row[COLUMN_INDEX.QURAN.NIS]?.toString().trim();
                     return rowNis === currentStudent.nis.toString().trim();
@@ -1561,7 +1560,7 @@
                 
                 if (studentRow) {
                     console.log('✅ Data Quran ditemukan untuk siswa:', currentStudent.nama);
-                    processQuranData(studentRow);
+                    processQuranData(studentRow, surahNames);
                 } else {
                     console.log('⚠️ Data Quran tidak ditemukan untuk NIS:', currentStudent.nis);
                     resetQuranData();
@@ -1572,8 +1571,8 @@
             }
 
             // Proses data Hadist
-            if (hadistData && hadistData.length > 0) {
-                const studentRow = hadistData.find(row => {
+            if (hadistData.rows && hadistData.rows.length > 0) {
+                const studentRow = hadistData.rows.find(row => {
                     if (!row || row.length < 2) return false;
                     const rowNis = row[COLUMN_INDEX.HADIST.NIS]?.toString().trim();
                     return rowNis === currentStudent.nis.toString().trim();
@@ -1741,34 +1740,76 @@
     // ==================== FUNGSI LOAD DATA ====================
     async function loadData() {
         try {
-            const [studentsData, attendanceData] = await Promise.all([
-                fetchSheetData('STUDENTS'),
-                fetchSheetData('ATTENDANCE')
-            ]);
-
-            students = arrayToObjects(studentsData);
-            attendanceRecords = arrayToObjects(attendanceData).map(record => {
-                if (record.location_lat && record.location_lng) {
-                    record.location = {
-                        lat: parseFloat(record.location_lat),
-                        lng: parseFloat(record.location_lng),
-                        accuracy: parseFloat(record.location_accuracy || 0),
-                        timestamp: record.timestamp || Date.now()
-                    };
-                    delete record.location_lat;
-                    delete record.location_lng;
-                    delete record.location_accuracy;
-                }
-                return record;
-            });
-
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
             
-            if (currentStudent) {
-                loadAttendance();
-                updateYearOptions();
-                renderStudentNote();
-            }
+            return new Promise((resolve) => {
+                window[callbackName] = function(response) {
+                    console.log('📥 Response data:', response);
+                    
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    delete window[callbackName];
+                    clearTimeout(timeout);
+                    
+                    if (response && response.success) {
+                        students = arrayToObjects(response.students || []);
+                        attendanceRecords = arrayToObjects(response.attendance || []).map(record => {
+                            if (record.location_lat && record.location_lng) {
+                                record.location = {
+                                    lat: parseFloat(record.location_lat),
+                                    lng: parseFloat(record.location_lng),
+                                    accuracy: parseFloat(record.location_accuracy || 0),
+                                    timestamp: record.timestamp || Date.now()
+                                };
+                                delete record.location_lat;
+                                delete record.location_lng;
+                                delete record.location_accuracy;
+                            }
+                            return record;
+                        });
+                        pelanggaranRecords = arrayToObjects(response.pelanggaran || []);
+                        studentNotes = arrayToObjects(response.notes || []);
+                        
+                        document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+                        
+                        if (currentStudent) {
+                            loadAttendance();
+                            updateYearOptions();
+                            renderStudentNote();
+                        }
+                    }
+                    resolve();
+                };
+
+                const timeout = setTimeout(() => {
+                    console.log('⏱️ Timeout load data');
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve();
+                }, 10000);
+
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = `${APPS_SCRIPT_URL}?action=getAllData&studentId=${currentStudent?.id || ''}&callback=${callbackName}&_=${Date.now()}`;
+                
+                script.onerror = () => {
+                    console.error('❌ Script error load data');
+                    clearTimeout(timeout);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    script.remove();
+                    resolve();
+                };
+
+                document.body.appendChild(script);
+                console.log('📤 Mengirim request getAllData');
+            });
+            
         } catch (error) {
             console.error('Error loading data:', error);
             showToast('Gagal memuat data', 'error');
