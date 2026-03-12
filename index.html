@@ -1,1 +1,1902 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Wali Murid | MAS IBNU HUSAIN </title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    * { font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif; }
+    
+    body {
+      background: linear-gradient(145deg, #2b3a67 0%, #1b2a4e 50%, #0f1a2f 100%);
+      min-height: 100vh;
+    }
+    
+    /* Opening Animation */
+    #splashScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(145deg, #1a2639 0%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s ease-in-out;
+    }
 
+    .splash-content {
+      text-align: center;
+      animation: floatIn 1.2s ease-out;
+    }
+
+    @keyframes floatIn {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .splash-logo-container {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 30px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 40px;
+      padding: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border: 2px solid rgba(212, 175, 55, 0.2);
+      animation: pulseGlow 2s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 25px 50px -12px rgba(212, 175, 55, 0.3);
+        border-color: rgba(212, 175, 55, 0.2);
+      }
+      50% {
+        box-shadow: 0 35px 60px -12px rgba(212, 175, 55, 0.6);
+        border-color: rgba(212, 175, 55, 0.5);
+      }
+    }
+
+    .splash-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 20px;
+      background: white;
+      padding: 15px;
+    }
+
+    .splash-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #f5e7b2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+
+    .splash-subtitle {
+      color: rgba(255, 255, 255, 0.6);
+      font-family: 'Quicksand', sans-serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .splash-progress {
+      width: 200px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      margin: 30px auto 0;
+      overflow: hidden;
+    }
+
+    .splash-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d4af37, #f5e7b2);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      padding: 16px 28px;
+      border-radius: 40px;
+      color: white;
+      z-index: 9999;
+      animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-weight: 500;
+    }
+    
+    .toast-success { background: linear-gradient(135deg, #059669, #10b981); }
+    .toast-error { background: linear-gradient(135deg, #b91c1c, #dc2626); }
+    .toast-info { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(100%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .student-photo {
+      width: 90px;
+      height: 90px;
+      border-radius: 24px;
+      object-fit: cover;
+      border: 4px solid white;
+      box-shadow: 0 15px 30px -8px rgba(0,0,0,0.2);
+    }
+    
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+    }
+    
+    .status-hadir { background: #d1fae5; color: #059669; }
+    .status-pulang { background: #dbeafe; color: #2563eb; }
+    .status-izin { background: #fef3c7; color: #b45309; }
+    .status-sakit { background: #fee2e2; color: #dc2626; }
+    .status-absen { background: #f3f4f6; color: #6b7280; }
+    
+    .location-badge {
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .location-valid {
+      background: #d1fae5;
+      color: #059669;
+    }
+    
+    .location-invalid {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .pelanggaran-badge {
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    
+    .pelanggaran-ringan {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    
+    .pelanggaran-sedang {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .pelanggaran-berat {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    
+    .hafalan-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e6f0fa 100%);
+      border-left: 6px solid #d4af37;
+      border-radius: 24px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.2);
+    }
+
+    .hafalan-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.3);
+    }
+    
+    .hafalan-progress {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    .hafalan-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0f172a, #2b3a67);
+      border-radius: 5px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .surah-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      font-size: 12px;
+      margin-bottom: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .surah-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 4px 8px -2px rgba(0,0,0,0.1);
+    }
+    
+    .surah-item.hafal {
+      border-left: 4px solid #d4af37;
+    }
+    
+    .surah-item.belum {
+      border-left: 4px solid #ef4444;
+      opacity: 0.7;
+    }
+    
+    .surah-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    
+    .surah-number.hafal {
+      background: #fef9e7;
+      color: #d4af37;
+    }
+    
+    .surah-number.belum {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .surah-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    
+    .list-container {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    
+    .map-mini {
+      width: 100%;
+      height: 160px;
+      border-radius: 20px;
+      margin: 12px 0;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+    }
+    
+    .location-info {
+      background: #f0f9ff;
+      border-radius: 16px;
+      padding: 10px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+      border: 1px solid #bae6fd;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border-radius: 32px;
+    }
+
+    .btn-modern {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .btn-modern::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-modern:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-modern:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 30px -5px rgba(15, 23, 42, 0.4);
+    }
+
+    .modern-input {
+      border: 2px solid #e2e8f0;
+      transition: all 0.3s ease;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+
+    .modern-input:focus {
+      border-color: #d4af37;
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+      outline: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0f172a, #2b3a67);
+      color: white;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #b8860b, #d4af37);
+      color: white;
+    }
+
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Outfit', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .heading-gradient {
+      background: linear-gradient(135deg, #0f172a, #2b3a67);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .gold-text {
+      color: #d4af37;
+    }
+
+    /* Google Drive Image Styles */
+    .student-image-container {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 4px solid white;
+      box-shadow: 0 15px 30px -8px rgba(0,0,0,0.2);
+      background: #f3f4f6;
+    }
+
+    .student-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .student-image-fallback {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 32px;
+    }
+
+    .drive-image {
+      transition: opacity 0.3s ease;
+    }
+
+    .drive-image.loading {
+      opacity: 0.5;
+    }
+
+    .drive-image.error {
+      opacity: 0;
+    }
+
+    /* Note Card */
+    .note-card {
+      background: linear-gradient(135deg, #fef9e7, #fff3cd);
+      border-left: 4px solid #d4af37;
+      border-radius: 24px;
+      padding: 20px;
+    }
+    
+    /* Loading Spinner */
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #d4af37;
+      border-right: 4px solid #f5e7b2;
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <!-- Splash Screen / Opening Animation -->
+  <div id="splashScreen">
+    <div class="splash-content">
+      <div class="splash-logo-container">
+        <img id="splashLogo" src="" alt="Logo Sekolah" class="splash-logo hidden">
+        <div id="splashLogoDefault" class="w-full h-full bg-gradient-to-br from-[#0f172a] to-[#2b3a67] rounded-2xl flex items-center justify-center">
+          <i class="fas fa-user-graduate text-[#d4af37] text-6xl floating"></i>
+        </div>
+      </div>
+      <h1 class="splash-title">MAS IBNU HUSAIN</h1>
+      <p class="splash-subtitle">PORTAL WALI MURID</p>
+      <div class="splash-progress">
+        <div id="splashProgressBar" class="splash-progress-bar"></div>
+      </div>
+      <p id="splashStatus" class="text-white/60 text-sm mt-4">Memuat portal...</p>
+    </div>
+  </div>
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white/95 backdrop-blur-xl rounded-4xl shadow-2xl p-8 animate-fadeIn border border-[#d4af37]/30" style="border-radius: 48px;">
+      <div class="text-center mb-8">
+        <div class="w-24 h-24 bg-gradient-to-br from-[#0f172a] to-[#2b3a67] rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-xl floating">
+          <i class="fas fa-user-graduate text-[#d4af37] text-4xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold heading-gradient">Portal Wali Murid</h1>
+        <p class="text-gray-500 mt-1">MAS IBNU HUSAIN</p>
+      </div>
+      
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">NIS Anak</label>
+          <input type="text" id="loginNis" class="modern-input w-full" placeholder="Masukkan NIS">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <input type="password" id="loginPassword" class="modern-input w-full" placeholder="Masukkan password">
+        </div>
+        <button onclick="handleLogin()" class="btn-modern w-full btn-primary py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition">
+          <i class="fas fa-sign-in-alt mr-2"></i> LOGIN
+        </button>
+      </div>
+      
+      <div class="mt-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+        <p class="text-xs text-blue-700 text-center flex items-center justify-center gap-2">
+          <i class="fas fa-info-circle"></i>
+          Demo: NIS Siswa, Password: MASIBNUHUSAIN
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboardScreen" class="hidden p-4 max-w-5xl mx-auto">
+    <div class="space-y-6">
+      <!-- Header with Photo -->
+      <div class="glass-card p-8 animate-fadeIn" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(43, 58, 103, 0.95)); backdrop-filter: blur(20px);">
+        <div class="flex items-center gap-6">
+          <div id="studentPhotoContainer" class="student-image-container">
+            <img id="studentPhoto" src="" alt="Foto Siswa" class="student-image hidden" onerror="handleImageError(this)">
+            <div id="studentPhotoFallback" class="student-image-fallback">
+              <i class="fas fa-child"></i>
+            </div>
+            <div id="studentPhotoLoading" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden">
+              <i class="fas fa-spinner fa-spin text-[#d4af37] text-xl"></i>
+            </div>
+          </div>
+          <div class="flex-1">
+            <h2 id="studentName" class="text-3xl font-bold text-white"></h2>
+            <p id="studentClass" class="text-white/80 text-base mt-1"></p>
+            <p id="studentNis" class="text-white/60 text-sm mt-1">NIS: <span id="studentNisValue"></span></p>
+            <p id="studentId" class="text-white/40 text-xs mt-1">ID: <span id="studentIdValue"></span></p>
+          </div>
+          <button onclick="logout()" class="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl transition text-white font-semibold flex items-center gap-2 btn-modern">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Catatan dari Sekolah -->
+      <div id="noteCard" class="glass-card p-6 hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+            <i class="fas fa-sticky-note text-[#d4af37]"></i>
+            Catatan dari Sekolah
+          </h3>
+          <span id="noteDate" class="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full"></span>
+        </div>
+        <div id="noteContent" class="note-card p-5">
+          <p class="text-gray-700 whitespace-pre-line"></p>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-5 gap-4">
+        <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
+          <div class="text-3xl font-bold text-green-600" id="statHadir">0</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Hadir</div>
+          <div class="mt-2 text-green-500"><i class="fas fa-check-circle"></i></div>
+        </div>
+        <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
+          <div class="text-3xl font-bold text-blue-600" id="statPulang">0</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Pulang</div>
+          <div class="mt-2 text-blue-500"><i class="fas fa-home"></i></div>
+        </div>
+        <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
+          <div class="text-3xl font-bold text-yellow-600" id="statIzin">0</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Izin</div>
+          <div class="mt-2 text-yellow-500"><i class="fas fa-pen"></i></div>
+        </div>
+        <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
+          <div class="text-3xl font-bold text-red-600" id="statSakit">0</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Sakit</div>
+          <div class="mt-2 text-red-500"><i class="fas fa-thermometer-half"></i></div>
+        </div>
+        <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
+          <div class="text-3xl font-bold text-[#d4af37]" id="totalPoin">0</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Poin Pelanggaran</div>
+          <div class="mt-2 text-[#d4af37]"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+      </div>
+
+      <!-- Persentase Card -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-gray-800 text-lg">📊 Tingkat Kehadiran</h3>
+          <span class="text-3xl font-bold text-[#d4af37]" id="persentase">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-4">
+          <div id="progressBar" class="bg-gradient-to-r from-[#0f172a] to-[#2b3a67] h-4 rounded-full transition-all duration-700" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Informasi Lokasi Sekolah -->
+      <div class="glass-card p-5">
+        <div class="flex items-center gap-3 text-sm text-gray-700">
+          <i class="fas fa-map-marker-alt text-[#d4af37] text-xl"></i>
+          <span class="font-medium">Jl. Irawati 1 No. 15-17, Surabaya</span>
+          <span class="text-xs bg-[#0f172a] text-[#d4af37] px-3 py-1.5 rounded-full ml-auto font-semibold">Radius 100m</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-2 flex items-center gap-2">
+          <i class="fas fa-crosshairs"></i>
+          <span class="font-mono">-7.230636, 112.749601</span>
+        </div>
+      </div>
+
+      <!-- ========== PROGRES HAFALAN SECTION ========== -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-bold text-gray-800 text-xl flex items-center gap-3">
+            <i class="fas fa-book-open text-[#d4af37]"></i>
+            Progres Hafalan
+          </h3>
+          <button onclick="testGoogleSheet()" class="btn-modern text-xs bg-[#0f172a] text-white px-4 py-2 rounded-xl hover:bg-[#2b3a67] transition flex items-center gap-2">
+            <i class="fas fa-wifi"></i> Test Koneksi
+          </button>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="hafalanLoading" class="text-center py-10">
+          <div class="loading-spinner mx-auto mb-4"></div>
+          <p class="text-gray-600 font-medium">Memuat data hafalan...</p>
+          <p class="text-xs text-gray-400 mt-3">Mengambil data dari Google Sheets</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="hafalanError" class="hidden text-center py-8 text-red-600 bg-red-50 rounded-2xl">
+          <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+          <p id="hafalanErrorMessage" class="font-semibold">Gagal memuat data</p>
+          <button onclick="retryLoadHafalan()" class="mt-4 bg-red-600 text-white px-6 py-3 rounded-xl text-sm hover:bg-red-700 transition btn-modern">
+            Coba Lagi
+          </button>
+        </div>
+        
+        <!-- Content State -->
+        <div id="hafalanContent" class="hidden space-y-8">
+          
+          <!-- HAFALAN QURAN -->
+          <div class="hafalan-card">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-[#fef9e7] rounded-2xl flex items-center justify-center">
+                  <i class="fas fa-quran text-[#d4af37] text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 text-lg">Hafalan Quran</h4>
+              </div>
+              <span id="quranStats" class="text-sm font-bold bg-[#fef9e7] text-[#d4af37] px-4 py-2 rounded-full">-</span>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="bg-[#fef9e7] rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Surat Terakhir</div>
+                <div id="quranLastSurah" class="font-bold text-[#d4af37] text-sm mt-1">-</div>
+              </div>
+              <div class="bg-[#fef9e7] rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Total Hafal</div>
+                <div id="quranTotalHafal" class="font-bold text-[#d4af37] text-sm mt-1">-</div>
+              </div>
+              <div class="bg-[#fef9e7] rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Progress</div>
+                <div id="quranProgressPercent" class="font-bold text-[#d4af37] text-sm mt-1">-</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="hafalan-progress">
+                <div id="quranProgressBar" class="hafalan-progress-bar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+              <div>
+                <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span class="w-3 h-3 bg-[#d4af37] rounded-full"></span>
+                  Sudah Hafal (<span id="quranHafalCount">0</span>)
+                </h5>
+                <div id="quranHafalList" class="list-container custom-scrollbar space-y-2"></div>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                  Belum Hafal (<span id="quranBelumCount">0</span>)
+                </h5>
+                <div id="quranBelumList" class="list-container custom-scrollbar space-y-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HAFALAN HADIST -->
+          <div class="hafalan-card" style="border-left-color: #2b3a67;">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+                  <i class="fas fa-hadith text-[#0f172a] text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 text-lg">Hadist Arba'in</h4>
+              </div>
+              <span id="hadistStats" class="text-sm font-bold bg-blue-50 text-[#0f172a] px-4 py-2 rounded-full">-</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Hadist Terakhir</div>
+                <div id="hadistLast" class="font-bold text-[#0f172a] text-sm mt-1">-</div>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Total Hafal</div>
+                <div id="hadistTotalHafal" class="font-bold text-[#0f172a] text-sm mt-1">-</div>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <div class="text-xs text-gray-600">Progress</div>
+                <div id="hadistProgressPercent" class="font-bold text-[#0f172a] text-sm mt-1">-</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="hafalan-progress">
+                <div id="hadistProgressBar" class="hafalan-progress-bar" style="background: linear-gradient(90deg, #0f172a, #2b3a67); width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+              <div>
+                <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                  Sudah Hafal (<span id="hadistHafalCount">0</span>)
+                </h5>
+                <div id="hadistHafalList" class="list-container custom-scrollbar space-y-2"></div>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                  Belum Hafal (<span id="hadistBelumCount">0</span>)
+                </h5>
+                <div id="hadistBelumList" class="list-container custom-scrollbar space-y-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== RIWAYAT PELANGGARAN ========== -->
+      <div class="glass-card p-6">
+        <h3 class="font-bold text-gray-800 text-xl mb-4 flex items-center gap-3">
+          <i class="fas fa-exclamation-triangle text-[#d4af37]"></i>
+          Riwayat Pelanggaran
+        </h3>
+        
+        <div id="pelanggaranLoading" class="text-center py-6 hidden">
+          <i class="fas fa-spinner fa-spin text-[#d4af37] text-2xl mb-3"></i>
+          <p class="text-gray-600">Memuat pelanggaran...</p>
+        </div>
+        
+        <div id="pelanggaranEmpty" class="text-center py-10 text-gray-500 hidden">
+          <i class="fas fa-check-circle text-5xl text-green-300 mb-3"></i>
+          <p class="font-medium">Tidak ada catatan pelanggaran</p>
+          <p class="text-sm mt-1">Siswa berperilaku baik</p>
+        </div>
+        
+        <div id="pelanggaranList" class="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-3"></div>
+        
+        <div id="pelanggaranSummary" class="mt-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl hidden">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-orange-700">Total Poin Pelanggaran:</span>
+            <span id="totalPoinPelanggaran" class="font-bold text-orange-700 text-2xl">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="glass-card p-5">
+        <div class="flex flex-wrap gap-3">
+          <select id="monthFilter" class="modern-input flex-1">
+            <option value="">Semua Bulan</option>
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maret</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Agustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+          
+          <select id="yearFilter" class="modern-input w-28">
+            <option value="">Semua Tahun</option>
+          </select>
+          
+          <button onclick="loadAttendance()" class="btn-modern px-6 py-3 btn-primary rounded-xl flex items-center gap-2">
+            <i class="fas fa-search"></i>
+            <span class="hidden sm:inline">Filter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Attendance List -->
+      <div class="glass-card overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <h3 class="font-bold text-gray-800 text-xl flex items-center gap-3">
+            <i class="fas fa-history text-[#d4af37]"></i>
+            Riwayat Absensi dengan Lokasi (Hadir & Pulang)
+          </h3>
+        </div>
+        <div id="attendanceList" class="p-6 max-h-[500px] overflow-y-auto custom-scrollbar space-y-3"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center text-xs text-white/80 mt-4">
+        <p>Data diperbarui secara real-time. Terakhir: <span id="lastUpdate" class="font-semibold text-[#d4af37]">-</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <script>
+    // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
+    // GANTI URL INI DENGAN URL DEPLOYMENT APPS SCRIPT ANDA
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
+
+    // Sheet names
+    const SHEET_NAMES = {
+        CONFIG: "CONFIG",
+        STUDENTS: "STUDENTS",
+        ATTENDANCE: "ATTENDANCE",
+        PELANGGARAN: "PELANGGARAN",
+        NOTES: "NOTES"
+    };
+
+    const GOOGLE_API_KEY = "AIzaSyBX70opf2IbxQ-5XD1qAj0FkXxKmJlH4Rk";
+    
+    const SHEET_IDS = {
+        QURAN: "1wekTDtB5Nlt-DhAIk2XiHvg_1_AfAQ0NFCt3Llivb8s",
+        HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs"
+    };
+
+    const TARGETS = {
+        QURAN: 37,
+        HADIST: 37
+    };
+
+    const SCHOOL_LOCATION = {
+        lat: -7.230636,
+        lng: 112.749601,
+        radius: 100,
+        address: "Jl. Irawati 1 No. 15-17, Surabaya"
+    };
+
+    let students = [];
+    let attendanceRecords = [];
+    let pelanggaranRecords = [];
+    let studentNotes = [];
+    let currentStudent = null;
+    let refreshInterval = null;
+    let configData = { school_logo: '' };
+
+    // Cache untuk data
+    const dataCache = {
+        config: null,
+        students: null,
+        attendance: null,
+        pelanggaran: null,
+        notes: null
+    };
+
+    // ==================== FUNGSI ARRAY TO OBJECTS ====================
+    function arrayToObjects(rows) {
+        if (!rows || rows.length < 2) return [];
+
+        const headers = rows[0];
+        const data = [];
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+
+            const obj = {};
+            headers.forEach((header, index) => {
+                if (header && header.trim()) {
+                    let value = row[index] !== undefined ? row[index] : '';
+                    
+                    // Bersihkan value
+                    if (typeof value === 'string') value = value.trim();
+                    
+                    // Konversi tipe data berdasarkan header
+                    if (header === 'created_at' || header === 'timestamp' || header === 'updated_at') {
+                        if (value && !isNaN(value)) value = Number(value);
+                    } else if (header === 'poin' || header === 'distance') {
+                        if (value && !isNaN(value)) value = parseInt(value, 10);
+                    } else if (header === 'lat' || header === 'lng' || header === 'accuracy') {
+                        if (value && !isNaN(value)) value = parseFloat(value);
+                    } else if (header === 'within_radius') {
+                        value = value === 'true' || value === 'TRUE' || value === '1' || value === true;
+                    } else if (header === 'nis' || header === 'student_nis') {
+                        // Pastikan NIS selalu string
+                        value = String(value);
+                    }
+                    
+                    obj[header.trim()] = value;
+                }
+            });
+
+            // Pastikan obj memiliki data minimal
+            if (obj.nis || obj.student_nis || obj.id) {
+                data.push(obj);
+            }
+        }
+
+        console.log(`📊 arrayToObjects: ${data.length} data dari ${rows.length - 1} baris`);
+        return data;
+    }
+
+    // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
+    async function fetchSheetData(sheetName) {
+        // Cek cache
+        if (dataCache[sheetName.toLowerCase()]) {
+            return dataCache[sheetName.toLowerCase()];
+        }
+
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    const data = response.data || [];
+                    dataCache[sheetName.toLowerCase()] = data;
+                    resolve(data);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            // Timeout
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName}`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            // Buat script tag
+            const actionMap = {
+                'CONFIG': 'getConfig',
+                'STUDENTS': 'getStudents',
+                'ATTENDANCE': 'getAttendance',
+                'PELANGGARAN': 'getPelanggaran',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName}`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
+        });
+    }
+
+    // GET data dengan parameter (untuk filter)
+    async function fetchSheetDataWithParams(sheetName, params = {}) {
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName} (filter):`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    resolve(response.data || []);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName} with params`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            const actionMap = {
+                'PELANGGARAN': 'getPelanggaran',
+                'ATTENDANCE': 'getAttendance',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            // Build URL dengan parameter
+            let url = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}`;
+            Object.keys(params).forEach(key => {
+                url += `&${key}=${encodeURIComponent(params[key])}`;
+            });
+            url += `&_=${Date.now()}`;
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = url;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName} with params`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName} dan params`, params);
+        });
+    }
+
+    // GET config dari Google Sheets
+    async function fetchConfig() {
+        try {
+            const data = await fetchSheetData('CONFIG');
+            if (data && typeof data === 'object') {
+                return data;
+            }
+            return {};
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            return {};
+        }
+    }
+
+    // ==================== FUNGSI GOOGLE DRIVE UNTUK FOTO ====================
+    function extractGoogleDriveFileId(url) {
+        if (!url) return null;
+        
+        const patterns = [
+            /\/file\/d\/([^\/?#]+)/,
+            /\/open\?id=([^&?#]+)/,
+            /\/uc\?id=([^&?#]+)/,
+            /\/d\/([^\/?#]+)/,
+            /id=([^&?#]+)/
+        ];
+        
+        for (let pattern of patterns) {
+            const match = url.match(pattern);
+            if (match && match[1]) {
+                return match[1];
+            }
+        }
+        
+        return null;
+    }
+
+    function convertGoogleDriveLink(link) {
+        if (!link) return '';
+        
+        const fileId = extractGoogleDriveFileId(link);
+        if (!fileId) return link;
+        
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+    }
+
+    function handleImageError(imgElement) {
+        imgElement.classList.add('hidden');
+        document.getElementById('studentPhotoFallback').classList.remove('hidden');
+        document.getElementById('studentPhotoLoading').classList.add('hidden');
+    }
+
+    async function loadStudentPhoto(photoUrl) {
+        const photoEl = document.getElementById('studentPhoto');
+        const fallbackEl = document.getElementById('studentPhotoFallback');
+        const loadingEl = document.getElementById('studentPhotoLoading');
+        
+        if (!photoUrl) {
+            photoEl.classList.add('hidden');
+            fallbackEl.classList.remove('hidden');
+            loadingEl.classList.add('hidden');
+            return;
+        }
+        
+        loadingEl.classList.remove('hidden');
+        fallbackEl.classList.add('hidden');
+        
+        const imageUrl = convertGoogleDriveLink(photoUrl);
+        
+        const img = new Image();
+        img.onload = () => {
+            photoEl.src = imageUrl;
+            photoEl.classList.remove('hidden');
+            fallbackEl.classList.add('hidden');
+            loadingEl.classList.add('hidden');
+        };
+        
+        img.onerror = () => {
+            console.error('Gagal memuat gambar:', photoUrl);
+            photoEl.classList.add('hidden');
+            fallbackEl.classList.remove('hidden');
+            loadingEl.classList.add('hidden');
+            showToast('Gagal memuat foto siswa', 'error');
+        };
+        
+        img.src = imageUrl;
+    }
+
+    // ==================== FUNGSI SPLASH SCREEN ====================
+    async function initSplashScreen() {
+        return new Promise(async (resolve) => {
+            const splash = document.getElementById('splashScreen');
+            const progressBar = document.getElementById('splashProgressBar');
+            const statusText = document.getElementById('splashStatus');
+            
+            try {
+                const config = await fetchConfig();
+                configData = config;
+                
+                if (configData.school_logo) {
+                    document.getElementById('splashLogo').src = configData.school_logo;
+                    document.getElementById('splashLogo').classList.remove('hidden');
+                    document.getElementById('splashLogoDefault').classList.add('hidden');
+                }
+                
+                const steps = [
+                    { progress: 20, text: 'Menyiapkan portal...' },
+                    { progress: 40, text: 'Memuat data siswa...' },
+                    { progress: 60, text: 'Menyiapkan hafalan...' },
+                    { progress: 80, text: 'Memuat riwayat...' },
+                    { progress: 100, text: 'Siap! Mengalihkan...' }
+                ];
+                
+                for (const step of steps) {
+                    progressBar.style.width = step.progress + '%';
+                    statusText.textContent = step.text;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    resolve();
+                }, 800);
+            } catch (error) {
+                console.error('Error in splash screen:', error);
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    resolve();
+                }, 800);
+            }
+        });
+    }
+
+    // ==================== FUNGSI LOKASI ====================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c;
+    }
+
+    function isWithinSchoolRadius(lat, lng) {
+        if (!lat || !lng) return false;
+        const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+        return distance <= SCHOOL_LOCATION.radius;
+    }
+
+    function getLocationStatus(lat, lng) {
+        if (!lat || !lng) return { valid: false, text: 'Tidak diketahui', class: '', distance: null };
+        const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+        const withinRadius = distance <= SCHOOL_LOCATION.radius;
+        return {
+            valid: withinRadius,
+            text: withinRadius ? `Dalam radius (${Math.round(distance)}m)` : `Luar radius (${Math.round(distance)}m)`,
+            class: withinRadius ? 'location-valid' : 'location-invalid',
+            distance: Math.round(distance)
+        };
+    }
+
+    // ==================== FUNGSI TEST KONEKSI ====================
+    function testGoogleSheet() {
+        showToast('Menguji koneksi ke Google Sheets...', 'info');
+        // Refresh hafalan
+        loadHafalanProgress();
+    }
+
+    // ==================== FUNGSI HAFALAN YANG DIPERBAIKI ====================
+    async function fetchHafalanViaAppsScript(nis, kelas) {
+        return new Promise((resolve, reject) => {
+            const callbackName = `hafalan_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log('📥 Response hafalan:', response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    resolve({
+                        quran: response.quran || { data: null, surahNames: [] },
+                        hadist: response.hadist || { data: null }
+                    });
+                } else {
+                    console.error('❌ Error dari Apps Script:', response?.error);
+                    reject(new Error(response?.error || 'Gagal memuat hafalan'));
+                }
+            };
+
+            const timeout = setTimeout(() => {
+                console.log('⏱️ Timeout fetch hafalan');
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                reject(new Error('Timeout - Server tidak merespons'));
+            }, 15000);
+
+            // Pastikan NIS dan kelas dikirim dengan benar
+            const url = `${APPS_SCRIPT_URL}?action=getHafalanByNIS&nis=${encodeURIComponent(nis)}&kelas=${encodeURIComponent(kelas)}&callback=${callbackName}&_=${Date.now()}`;
+            
+            console.log('📤 Mengirim request ke:', url);
+            
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = url;
+            
+            script.onerror = () => {
+                console.error('❌ Script error fetch hafalan');
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                reject(new Error('Network error - Gagal memuat script'));
+            };
+
+            document.body.appendChild(script);
+        });
+    }
+
+    async function loadHafalanProgress() {
+        const loadingEl = document.getElementById('hafalanLoading');
+        const errorEl = document.getElementById('hafalanError');
+        const contentEl = document.getElementById('hafalanContent');
+        const errorMessageEl = document.getElementById('hafalanErrorMessage');
+        
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+
+        if (!currentStudent) {
+            loadingEl.classList.add('hidden');
+            errorMessageEl.textContent = 'Siswa tidak ditemukan';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const nis = currentStudent.nis;
+            const kelas = currentStudent.kelas;
+            
+            console.log('📤 Memuat hafalan untuk:', { nis, kelas });
+            
+            // Fetch hafalan melalui Apps Script
+            const hafalanData = await fetchHafalanViaAppsScript(nis, kelas);
+            
+            loadingEl.classList.add('hidden');
+            
+            // Proses data Quran
+            if (hafalanData.quran && hafalanData.quran.data) {
+                console.log('✅ Data Quran ditemukan:', hafalanData.quran.data);
+                processQuranData(hafalanData.quran.data, hafalanData.quran.surahNames || []);
+            } else {
+                console.log('⚠️ Data Quran tidak ditemukan untuk NIS:', nis);
+                resetQuranData();
+            }
+            
+            // Proses data Hadist
+            if (hafalanData.hadist && hafalanData.hadist.data) {
+                console.log('✅ Data Hadist ditemukan:', hafalanData.hadist.data);
+                processHadistData(hafalanData.hadist.data);
+            } else {
+                console.log('⚠️ Data Hadist tidak ditemukan untuk NIS:', nis);
+                resetHadistData();
+            }
+            
+            contentEl.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('❌ Error:', error);
+            loadingEl.classList.add('hidden');
+            errorMessageEl.textContent = error.message || 'Gagal memuat data hafalan';
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    function processQuranData(row, surahNames) {
+        const totalHafal = parseInt(row[5]) || 0;
+        
+        const hafal = [];
+        const belum = [];
+        
+        for (let i = 1; i <= 37; i++) {
+            const colIndex = 5 + i;
+            const status = row[colIndex]?.toString().toLowerCase() || '';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓' || status === '☑️';
+            
+            if (isHafal) hafal.push(i);
+            else belum.push(i);
+        }
+        
+        const progress = (totalHafal / 37) * 100;
+        const lastSurahNum = hafal.length > 0 ? Math.max(...hafal) : 0;
+        const lastSurahName = (lastSurahNum > 0 && surahNames[lastSurahNum - 1]) 
+            ? `${lastSurahNum}. ${surahNames[lastSurahNum - 1]}`
+            : '-';
+        
+        document.getElementById('quranLastSurah').textContent = lastSurahName;
+        document.getElementById('quranTotalHafal').textContent = `${totalHafal} Surat`;
+        document.getElementById('quranProgressPercent').textContent = `${progress.toFixed(1)}%`;
+        document.getElementById('quranProgressBar').style.width = `${progress}%`;
+        document.getElementById('quranStats').textContent = `${totalHafal}/${37} Surat`;
+        document.getElementById('quranHafalCount').textContent = hafal.length;
+        document.getElementById('quranBelumCount').textContent = belum.length;
+        
+        const hafalList = document.getElementById('quranHafalList');
+        hafalList.innerHTML = hafal.map(num => `
+            <div class="surah-item hafal">
+                <div class="surah-number hafal">${num}</div>
+                <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
+                <i class="fas fa-check-circle text-[#d4af37] text-xs ml-2"></i>
+            </div>
+        `).join('');
+        
+        const belumList = document.getElementById('quranBelumList');
+        belumList.innerHTML = belum.map(num => `
+            <div class="surah-item belum">
+                <div class="surah-number belum">${num}</div>
+                <span class="surah-name">${surahNames[num - 1] || `Surat ${num}`}</span>
+                <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
+            </div>
+        `).join('');
+    }
+
+    function processHadistData(row) {
+        const totalHafal = parseInt(row[5]) || 0;
+        
+        const hafal = [];
+        const belum = [];
+        
+        for (let i = 1; i <= 37; i++) {
+            const colIndex = 5 + i;
+            const status = row[colIndex]?.toString().toLowerCase() || '';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓' || status === '☑️';
+            
+            if (isHafal) hafal.push(i);
+            else belum.push(i);
+        }
+        
+        const progress = (totalHafal / 37) * 100;
+        const lastHadist = hafal.length > 0 ? Math.max(...hafal) : 0;
+        
+        document.getElementById('hadistLast').textContent = lastHadist > 0 ? `Hadist ${lastHadist}` : '-';
+        document.getElementById('hadistTotalHafal').textContent = `${totalHafal} Hadist`;
+        document.getElementById('hadistProgressPercent').textContent = `${progress.toFixed(1)}%`;
+        document.getElementById('hadistProgressBar').style.width = `${progress}%`;
+        document.getElementById('hadistStats').textContent = `${totalHafal}/${37} Hadist`;
+        document.getElementById('hadistHafalCount').textContent = hafal.length;
+        document.getElementById('hadistBelumCount').textContent = belum.length;
+        
+        const hafalList = document.getElementById('hadistHafalList');
+        hafalList.innerHTML = hafal.map(num => `
+            <div class="surah-item hafal">
+                <div class="surah-number hafal">${num}</div>
+                <span class="surah-name">Hadist ${num}</span>
+                <i class="fas fa-check-circle text-[#0f172a] text-xs ml-2"></i>
+            </div>
+        `).join('');
+        
+        const belumList = document.getElementById('hadistBelumList');
+        belumList.innerHTML = belum.map(num => `
+            <div class="surah-item belum">
+                <div class="surah-number belum">${num}</div>
+                <span class="surah-name">Hadist ${num}</span>
+                <i class="fas fa-hourglass-half text-red-400 text-xs ml-2"></i>
+            </div>
+        `).join('');
+    }
+
+    function resetQuranData() {
+        document.getElementById('quranLastSurah').textContent = '-';
+        document.getElementById('quranTotalHafal').textContent = '0 Surat';
+        document.getElementById('quranProgressPercent').textContent = '0%';
+        document.getElementById('quranProgressBar').style.width = '0%';
+        document.getElementById('quranStats').textContent = `0/${37} Surat`;
+        document.getElementById('quranHafalCount').textContent = '0';
+        document.getElementById('quranBelumCount').textContent = '0';
+        document.getElementById('quranHafalList').innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Belum ada data</div>';
+        document.getElementById('quranBelumList').innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Belum ada data</div>';
+    }
+
+    function resetHadistData() {
+        document.getElementById('hadistLast').textContent = '-';
+        document.getElementById('hadistTotalHafal').textContent = '0 Hadist';
+        document.getElementById('hadistProgressPercent').textContent = '0%';
+        document.getElementById('hadistProgressBar').style.width = '0%';
+        document.getElementById('hadistStats').textContent = `0/${37} Hadist`;
+        document.getElementById('hadistHafalCount').textContent = '0';
+        document.getElementById('hadistBelumCount').textContent = '0';
+        document.getElementById('hadistHafalList').innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Belum ada data</div>';
+        document.getElementById('hadistBelumList').innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Belum ada data</div>';
+    }
+
+    function retryLoadHafalan() {
+        loadHafalanProgress();
+    }
+
+    // ==================== FUNGSI CATATAN SISWA ====================
+    async function loadStudentNotes() {
+        try {
+            const data = await fetchSheetData('NOTES');
+            studentNotes = arrayToObjects(data);
+        } catch (error) {
+            console.error('Error loading notes:', error);
+            studentNotes = [];
+        }
+    }
+
+    function renderStudentNote() {
+        const noteCard = document.getElementById('noteCard');
+        const noteDate = document.getElementById('noteDate');
+        const noteContent = document.querySelector('#noteContent p');
+        
+        if (!currentStudent) return;
+        
+        const note = studentNotes.find(n => n.student_id === currentStudent.id);
+        
+        if (note) {
+            noteDate.textContent = note.updated_at ? 
+                `Diperbarui: ${new Date(parseInt(note.updated_at)).toLocaleDateString('id-ID')}` : 
+                '';
+            noteContent.textContent = note.note;
+            noteCard.classList.remove('hidden');
+        } else {
+            noteCard.classList.add('hidden');
+        }
+    }
+
+    // ==================== FUNGSI PELANGGARAN ====================
+    async function loadPelanggaran() {
+        if (!currentStudent) return;
+        
+        document.getElementById('pelanggaranLoading')?.classList.remove('hidden');
+        
+        try {
+            const data = await fetchSheetDataWithParams('PELANGGARAN', { student_id: currentStudent.id });
+            pelanggaranRecords = arrayToObjects(data);
+            
+            document.getElementById('pelanggaranLoading')?.classList.add('hidden');
+            
+            const totalPoin = pelanggaranRecords.reduce((sum, p) => sum + (parseInt(p.poin) || 0), 0);
+            document.getElementById('totalPoin').textContent = totalPoin;
+            
+            renderPelanggaranList(pelanggaranRecords);
+            
+        } catch (error) {
+            console.error('Error loading pelanggaran:', error);
+            document.getElementById('pelanggaranLoading')?.classList.add('hidden');
+        }
+    }
+
+    function renderPelanggaranList(pelanggaran) {
+        const listEl = document.getElementById('pelanggaranList');
+        const emptyEl = document.getElementById('pelanggaranEmpty');
+        const summaryEl = document.getElementById('pelanggaranSummary');
+        const totalPoinEl = document.getElementById('totalPoinPelanggaran');
+        
+        if (pelanggaran.length === 0) {
+            listEl.innerHTML = '';
+            emptyEl.classList.remove('hidden');
+            summaryEl.classList.add('hidden');
+            return;
+        }
+        
+        emptyEl.classList.add('hidden');
+        summaryEl.classList.remove('hidden');
+        
+        pelanggaran.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+        
+        const totalPoin = pelanggaran.reduce((sum, p) => sum + (parseInt(p.poin) || 0), 0);
+        totalPoinEl.textContent = totalPoin;
+        
+        listEl.innerHTML = pelanggaran.map(p => {
+            let badgeClass = 'pelanggaran-ringan';
+            if (p.poin >= 20) badgeClass = 'pelanggaran-berat';
+            else if (p.poin >= 10) badgeClass = 'pelanggaran-sedang';
+            
+            const tanggal = new Date(p.tanggal).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+            
+            return `
+                <div class="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-5 pelanggaran-item hover:shadow-lg transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-medium text-gray-500">${tanggal}</span>
+                        <span class="pelanggaran-badge ${badgeClass} font-bold">${p.poin} Poin</span>
+                    </div>
+                    <div class="font-bold text-gray-800 mb-2 text-lg">${p.jenis}</div>
+                    <div class="text-sm text-gray-600 mb-2">${p.kategori_nama || '-'}</div>
+                    ${p.keterangan ? `<p class="text-xs text-gray-500 mt-2 p-3 bg-white/50 rounded-xl">📝 ${p.keterangan}</p>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ==================== FUNGSI LOAD DATA ====================
+    async function loadData() {
+        try {
+            const [studentsData, attendanceData] = await Promise.all([
+                fetchSheetData('STUDENTS'),
+                fetchSheetData('ATTENDANCE')
+            ]);
+
+            students = arrayToObjects(studentsData);
+            attendanceRecords = arrayToObjects(attendanceData).map(record => {
+                if (record.location_lat && record.location_lng) {
+                    record.location = {
+                        lat: parseFloat(record.location_lat),
+                        lng: parseFloat(record.location_lng),
+                        accuracy: parseFloat(record.location_accuracy || 0),
+                        timestamp: record.timestamp || Date.now()
+                    };
+                    delete record.location_lat;
+                    delete record.location_lng;
+                    delete record.location_accuracy;
+                }
+                return record;
+            });
+
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+            
+            if (currentStudent) {
+                loadAttendance();
+                updateYearOptions();
+                renderStudentNote();
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showToast('Gagal memuat data', 'error');
+        }
+    }
+
+    function updateYearOptions() {
+        if (!currentStudent || !attendanceRecords.length) return;
+        
+        const studentAttendance = attendanceRecords.filter(r => r.student_id === currentStudent.id);
+        
+        const years = new Set();
+        studentAttendance.forEach(record => {
+            if (record.tanggal) {
+                const year = record.tanggal.split('-')[0];
+                if (year) years.add(year);
+            }
+        });
+        
+        const sortedYears = Array.from(years).sort((a, b) => b - a);
+        
+        const yearSelect = document.getElementById('yearFilter');
+        const currentValue = yearSelect.value;
+        
+        let options = '<option value="">Semua Tahun</option>';
+        sortedYears.forEach(year => {
+            options += `<option value="${year}" ${year === currentValue ? 'selected' : ''}>${year}</option>`;
+        });
+        
+        yearSelect.innerHTML = options;
+    }
+
+    function startAutoRefresh() {
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+            loadData();
+            if (currentStudent) loadPelanggaran();
+        }, 30000);
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-xl"></i>
+            <span>${message}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('id-ID', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp) return '-';
+        return new Date(parseInt(timestamp)).toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    async function handleLogin() {
+        const nis = document.getElementById('loginNis').value.trim();
+        const password = document.getElementById('loginPassword').value;
+
+        if (password !== "MASIBNUHUSAIN") {
+            showToast('Password salah!', 'error');
+            return;
+        }
+
+        await loadData();
+
+        const student = students.find(s => s.nis === nis);
+        if (!student) {
+            showToast('NIS tidak ditemukan!', 'error');
+            return;
+        }
+
+        currentStudent = student;
+        document.getElementById('studentName').textContent = student.nama;
+        document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
+        document.getElementById('studentNisValue').textContent = student.nis;
+        document.getElementById('studentIdValue').textContent = student.id || '-';
+        
+        await loadStudentPhoto(student.photo);
+        await loadStudentNotes();
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboardScreen').classList.remove('hidden');
+
+        renderStudentNote();
+        loadAttendance();
+        await loadHafalanProgress();
+        await loadPelanggaran();
+        updateYearOptions();
+        startAutoRefresh();
+        showToast(`Selamat datang, ${student.nama}`, 'success');
+    }
+
+    function loadAttendance() {
+        const month = document.getElementById('monthFilter').value;
+        const year = document.getElementById('yearFilter').value;
+        
+        let filtered = attendanceRecords.filter(r => r.student_id === currentStudent.id);
+        
+        if (month) {
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[1] === month);
+        }
+        
+        if (year) {
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[0] === year);
+        }
+
+        filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+        const stats = {
+            hadir: filtered.filter(r => r.status === 'hadir').length,
+            pulang: filtered.filter(r => r.status === 'pulang').length,
+            izin: filtered.filter(r => r.status === 'izin').length,
+            sakit: filtered.filter(r => r.status === 'sakit').length
+        };
+
+        const totalHadirPulang = stats.hadir + stats.pulang + stats.izin + stats.sakit;
+        const persentase = totalHadirPulang > 0 ? ((stats.hadir / totalHadirPulang) * 100).toFixed(1) : 0;
+
+        document.getElementById('statHadir').textContent = stats.hadir;
+        document.getElementById('statPulang').textContent = stats.pulang;
+        document.getElementById('statIzin').textContent = stats.izin;
+        document.getElementById('statSakit').textContent = stats.sakit;
+        document.getElementById('persentase').textContent = `${persentase}%`;
+        document.getElementById('progressBar').style.width = `${persentase}%`;
+
+        const list = document.getElementById('attendanceList');
+        
+        if (filtered.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-16">
+                    <div class="text-6xl mb-4 text-gray-300">📅</div>
+                    <p class="text-gray-500 font-medium">Belum ada data absensi</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = filtered.map(r => {
+            const date = new Date(r.tanggal);
+            const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
+            const formattedDate = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            const statusColors = {
+                hadir: 'status-hadir',
+                pulang: 'status-pulang',
+                izin: 'status-izin',
+                sakit: 'status-sakit',
+                absen: 'status-absen'
+            };
+
+            const metodeIcon = {
+                qr: 'fa-qrcode',
+                manual: 'fa-pen'
+            };
+
+            const locationStatus = r.location ? getLocationStatus(r.location.lat, r.location.lng) : null;
+
+            return `
+                <div class="bg-white rounded-2xl p-5 hover:shadow-xl transition border border-gray-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <span class="text-base font-bold text-gray-800">${dayName}, ${formattedDate}</span>
+                            <span class="text-xs text-gray-500 ml-3">
+                                <i class="fas fa-clock mr-1"></i>${formatTime(r.timestamp)}
+                            </span>
+                        </div>
+                        <span class="status-badge ${statusColors[r.status]}">
+                            ${r.status === 'pulang' ? 'PULANG' : r.status.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 text-sm">
+                        <span class="text-xs bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+                            <i class="fas ${metodeIcon[r.metode] || 'fa-question'} mr-1"></i>
+                            ${r.metode || 'manual'}
+                        </span>
+                        
+                        ${r.location ? `
+                            <span class="location-badge ${locationStatus.class}">
+                                <i class="fas fa-map-pin mr-1"></i>${locationStatus.text}
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    ${r.location ? `
+                        <div class="location-info mt-3">
+                            <div class="text-xs text-gray-600 flex items-center gap-2">
+                                <i class="fas fa-crosshairs text-[#d4af37]"></i>
+                                <span class="font-mono">${r.location.lat.toFixed(6)}, ${r.location.lng.toFixed(6)}</span>
+                                <span class="bg-gray-200 px-2 py-1 rounded-full ml-auto">±${Math.round(r.location.accuracy)}m</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${r.keterangan ? `<p class="text-xs text-gray-500 mt-3 p-3 bg-gray-50 rounded-xl">📝 ${r.keterangan}</p>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function logout() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+        currentStudent = null;
+        pelanggaranRecords = [];
+        document.getElementById('dashboardScreen').classList.add('hidden');
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginNis').value = '';
+        document.getElementById('loginPassword').value = '';
+        
+        document.getElementById('studentPhoto').classList.add('hidden');
+        document.getElementById('studentPhotoFallback').classList.remove('hidden');
+        document.getElementById('studentPhotoLoading').classList.add('hidden');
+    }
+
+    async function init() {
+        try {
+            await initSplashScreen();
+        } catch (error) {
+            console.error('Error in init:', error);
+            document.getElementById('splashScreen').style.display = 'none';
+        }
+    }
+
+    window.onload = init;
+    window.testGoogleSheet = testGoogleSheet;
+    window.retryLoadHafalan = retryLoadHafalan;
+    window.handleLogin = handleLogin;
+    window.loadAttendance = loadAttendance;
+    window.logout = logout;
+    window.handleImageError = handleImageError;
+  </script>
+</body>
+</html>
