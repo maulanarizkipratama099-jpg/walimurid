@@ -917,31 +917,162 @@
     let surahNames = [];
     let configData = { school_logo: '' };
 
-    // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
+    // Cache untuk data
+    const dataCache = {
+        config: null,
+        students: null,
+        attendance: null,
+        pelanggaran: null,
+        notes: null
+    };
 
-    // GET data dari Google Sheets via Apps Script
+    // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
     async function fetchSheetData(sheetName) {
-        try {
-            const url = `${APPS_SCRIPT_URL}?action=get${sheetName}&t=${Date.now()}`;
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                return result.data || [];
-            } else {
-                console.error(`Error fetching ${sheetName}:`, result.error);
-                showToast(`Gagal memuat data ${sheetName}`, 'error');
-                return [];
-            }
-        } catch (error) {
-            console.error(`Error fetching ${sheetName}:`, error);
-            return [];
+        // Cek cache
+        if (dataCache[sheetName.toLowerCase()]) {
+            return dataCache[sheetName.toLowerCase()];
         }
+
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            // Definisi callback
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    const data = response.data || [];
+                    dataCache[sheetName.toLowerCase()] = data;
+                    resolve(data);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            // Timeout
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName}`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            // Buat script tag
+            const actionMap = {
+                'CONFIG': 'getConfig',
+                'STUDENTS': 'getStudents',
+                'ATTENDANCE': 'getAttendance',
+                'PELANGGARAN': 'getPelanggaran',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName}`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
+        });
+    }
+
+    // GET data dengan parameter (untuk filter)
+    async function fetchSheetDataWithParams(sheetName, params = {}) {
+        return new Promise((resolve) => {
+            const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            window[callbackName] = function(response) {
+                console.log(`📥 Response diterima untuk ${sheetName} (filter):`, response);
+                
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                
+                delete window[callbackName];
+                clearTimeout(timeout);
+                
+                if (response && response.success) {
+                    resolve(response.data || []);
+                } else {
+                    console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                    resolve([]);
+                }
+            };
+
+            const timeout = setTimeout(() => {
+                console.log(`⏱️ Timeout fetch ${sheetName} with params`);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                const script = document.getElementById(callbackName);
+                if (script) script.remove();
+                resolve([]);
+            }, 10000);
+
+            const actionMap = {
+                'PELANGGARAN': 'getPelanggaran',
+                'ATTENDANCE': 'getAttendance',
+                'NOTES': 'getNotes'
+            };
+
+            const action = actionMap[sheetName];
+            if (!action) {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                resolve([]);
+                return;
+            }
+
+            // Build URL dengan parameter
+            let url = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}`;
+            Object.keys(params).forEach(key => {
+                url += `&${key}=${encodeURIComponent(params[key])}`;
+            });
+            url += `&_=${Date.now()}`;
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = url;
+            
+            script.onerror = () => {
+                console.error(`❌ Script error fetch ${sheetName} with params`);
+                clearTimeout(timeout);
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                }
+                script.remove();
+                resolve([]);
+            };
+
+            document.body.appendChild(script);
+            console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName} dan params`, params);
+        });
     }
 
     // GET config dari Google Sheets
@@ -955,35 +1086,6 @@
         } catch (error) {
             console.error('Error fetching config:', error);
             return {};
-        }
-    }
-
-    // GET data dengan parameter
-    async function fetchSheetDataWithParams(sheetName, params = {}) {
-        try {
-            let url = `${APPS_SCRIPT_URL}?action=get${sheetName}`;
-            Object.keys(params).forEach(key => {
-                url += `&${key}=${encodeURIComponent(params[key])}`;
-            });
-            url += `&t=${Date.now()}`;
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                return result.data || [];
-            } else {
-                console.error(`Error fetching ${sheetName}:`, result.error);
-                return [];
-            }
-        } catch (error) {
-            console.error(`Error fetching ${sheetName}:`, error);
-            return [];
         }
     }
 
@@ -1376,7 +1478,7 @@
     async function loadStudentNotes() {
         try {
             const data = await fetchSheetData('NOTES');
-            studentNotes = data && data.length > 1 ? arrayToObjects(data) : [];
+            studentNotes = arrayToObjects(data);
         } catch (error) {
             console.error('Error loading notes:', error);
             studentNotes = [];
@@ -1418,25 +1520,6 @@
         return data;
     }
 
-    function objectsToArray(objects, headers) {
-        const rows = [headers];
-        
-        objects.forEach(obj => {
-            const row = headers.map(header => {
-                let value = obj[header] !== undefined ? obj[header] : '';
-                
-                if (header === 'location_lat' && obj.location) value = obj.location.lat || '';
-                if (header === 'location_lng' && obj.location) value = obj.location.lng || '';
-                if (header === 'location_accuracy' && obj.location) value = obj.location.accuracy || '';
-                
-                return value;
-            });
-            rows.push(row);
-        });
-        
-        return rows;
-    }
-
     function renderStudentNote() {
         const noteCard = document.getElementById('noteCard');
         const noteDate = document.getElementById('noteDate');
@@ -1465,7 +1548,7 @@
         
         try {
             const data = await fetchSheetDataWithParams('PELANGGARAN', { student_id: currentStudent.id });
-            pelanggaranRecords = data && data.length > 1 ? arrayToObjects(data) : [];
+            pelanggaranRecords = arrayToObjects(data);
             
             document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
@@ -1524,7 +1607,7 @@
         }).join('');
     }
 
-    // ==================== FUNGSI JSONBIN ====================
+    // ==================== FUNGSI LOAD DATA ====================
     async function loadData() {
         try {
             const [studentsData, attendanceData] = await Promise.all([
@@ -1532,8 +1615,21 @@
                 fetchSheetData('ATTENDANCE')
             ]);
 
-            students = studentsData && studentsData.length > 1 ? arrayToObjects(studentsData) : [];
-            attendanceRecords = attendanceData && attendanceData.length > 1 ? arrayToObjects(attendanceData) : [];
+            students = arrayToObjects(studentsData);
+            attendanceRecords = arrayToObjects(attendanceData).map(record => {
+                if (record.location_lat && record.location_lng) {
+                    record.location = {
+                        lat: parseFloat(record.location_lat),
+                        lng: parseFloat(record.location_lng),
+                        accuracy: parseFloat(record.location_accuracy || 0),
+                        timestamp: record.timestamp || Date.now()
+                    };
+                    delete record.location_lat;
+                    delete record.location_lng;
+                    delete record.location_accuracy;
+                }
+                return record;
+            });
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
