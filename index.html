@@ -1279,9 +1279,10 @@
     // ==================== FUNGSI TEST KONEKSI ====================
     function testGoogleSheet() {
         showToast('Menguji koneksi ke Google Sheets...', 'info');
+        loadHafalanProgress(); // Refresh hafalan
     }
 
-    // ==================== FUNGSI HAFALAN ====================
+    // ==================== FUNGSI HAFALAN YANG DIPERBAIKI ====================
     async function fetchHafalanViaAppsScript(nis, kelas) {
         return new Promise((resolve, reject) => {
             const callbackName = `hafalan_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
@@ -1313,10 +1314,13 @@
                 }
                 const script = document.getElementById(callbackName);
                 if (script) script.remove();
-                reject(new Error('Timeout'));
+                reject(new Error('Timeout - Server tidak merespons'));
             }, 15000);
 
+            // Pastikan NIS dan kelas dikirim dengan benar
             const url = `${APPS_SCRIPT_URL}?action=getHafalanByNIS&nis=${encodeURIComponent(nis)}&kelas=${encodeURIComponent(kelas)}&callback=${callbackName}&_=${Date.now()}`;
+            
+            console.log('📤 Mengirim request ke:', url);
             
             const script = document.createElement('script');
             script.id = callbackName;
@@ -1329,57 +1333,66 @@
                     delete window[callbackName];
                 }
                 script.remove();
-                reject(new Error('Network error'));
+                reject(new Error('Network error - Gagal memuat script'));
             };
 
             document.body.appendChild(script);
-            console.log('📤 Mengirim request hafalan dengan callback', callbackName);
         });
     }
 
     async function loadHafalanProgress() {
-        document.getElementById('hafalanLoading').classList.remove('hidden');
-        document.getElementById('hafalanError').classList.add('hidden');
-        document.getElementById('hafalanContent').classList.add('hidden');
+        const loadingEl = document.getElementById('hafalanLoading');
+        const errorEl = document.getElementById('hafalanError');
+        const contentEl = document.getElementById('hafalanContent');
+        const errorMessageEl = document.getElementById('hafalanErrorMessage');
+        
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
 
         if (!currentStudent) {
-            document.getElementById('hafalanLoading').classList.add('hidden');
-            document.getElementById('hafalanErrorMessage').textContent = 'Siswa tidak ditemukan';
-            document.getElementById('hafalanError').classList.remove('hidden');
+            loadingEl.classList.add('hidden');
+            errorMessageEl.textContent = 'Siswa tidak ditemukan';
+            errorEl.classList.remove('hidden');
             return;
         }
 
         try {
-            // Gunakan Apps Script untuk mengambil data hafalan
             const nis = currentStudent.nis;
             const kelas = currentStudent.kelas;
             
-            console.log('📤 Memuat hafalan untuk:', nis, kelas);
+            console.log('📤 Memuat hafalan untuk:', { nis, kelas });
             
             // Fetch hafalan melalui Apps Script
             const hafalanData = await fetchHafalanViaAppsScript(nis, kelas);
             
-            document.getElementById('hafalanLoading').classList.add('hidden');
+            loadingEl.classList.add('hidden');
             
+            // Proses data Quran
             if (hafalanData.quran && hafalanData.quran.data) {
+                console.log('✅ Data Quran ditemukan:', hafalanData.quran.data);
                 processQuranData(hafalanData.quran.data, hafalanData.quran.surahNames || []);
             } else {
+                console.log('⚠️ Data Quran tidak ditemukan');
                 resetQuranData();
             }
             
+            // Proses data Hadist
             if (hafalanData.hadist && hafalanData.hadist.data) {
+                console.log('✅ Data Hadist ditemukan:', hafalanData.hadist.data);
                 processHadistData(hafalanData.hadist.data);
             } else {
+                console.log('⚠️ Data Hadist tidak ditemukan');
                 resetHadistData();
             }
             
-            document.getElementById('hafalanContent').classList.remove('hidden');
+            contentEl.classList.remove('hidden');
 
         } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('hafalanLoading').classList.add('hidden');
-            document.getElementById('hafalanErrorMessage').textContent = error.message;
-            document.getElementById('hafalanError').classList.remove('hidden');
+            console.error('❌ Error:', error);
+            loadingEl.classList.add('hidden');
+            errorMessageEl.textContent = error.message || 'Gagal memuat data hafalan';
+            errorEl.classList.remove('hidden');
         }
     }
 
@@ -1392,7 +1405,7 @@
         for (let i = 1; i <= 37; i++) {
             const colIndex = 5 + i;
             const status = row[colIndex]?.toString().toLowerCase() || '';
-            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓' || status === '☑️';
             
             if (isHafal) hafal.push(i);
             else belum.push(i);
@@ -1440,7 +1453,7 @@
         for (let i = 1; i <= 37; i++) {
             const colIndex = 5 + i;
             const status = row[colIndex]?.toString().toLowerCase() || '';
-            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓';
+            const isHafal = status === '☑' || status === 'true' || status === '1' || status === 'yes' || status === '✓' || status === '☑️';
             
             if (isHafal) hafal.push(i);
             else belum.push(i);
@@ -1749,11 +1762,11 @@
         let filtered = attendanceRecords.filter(r => r.student_id === currentStudent.id);
         
         if (month) {
-            filtered = filtered.filter(r => r.tanggal.split('-')[1] === month);
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[1] === month);
         }
         
         if (year) {
-            filtered = filtered.filter(r => r.tanggal.split('-')[0] === year);
+            filtered = filtered.filter(r => r.tanggal && r.tanggal.split('-')[0] === year);
         }
 
         filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
