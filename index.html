@@ -557,7 +557,8 @@
           <div class="flex-1">
             <h2 id="studentName" class="text-3xl font-bold text-white"></h2>
             <p id="studentClass" class="text-white/80 text-base mt-1"></p>
-            <p id="studentNis" class="text-white/60 text-sm mt-1"></p>
+            <p id="studentNis" class="text-white/60 text-sm mt-1">NIS: <span id="studentNisValue"></span></p>
+            <p id="studentId" class="text-white/40 text-xs mt-1">ID: <span id="studentIdValue"></span></p>
           </div>
           <button onclick="logout()" class="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl transition text-white font-semibold flex items-center gap-2 btn-modern">
             <i class="fas fa-sign-out-alt"></i>
@@ -604,7 +605,7 @@
         </div>
         <div class="glass-card p-6 text-center hover:scale-105 transition duration-300">
           <div class="text-3xl font-bold text-[#d4af37]" id="totalPoin">0</div>
-          <div class="text-sm text-gray-600 mt-1 font-medium">Poin</div>
+          <div class="text-sm text-gray-600 mt-1 font-medium">Poin Pelanggaran</div>
           <div class="mt-2 text-[#d4af37]"><i class="fas fa-exclamation-triangle"></i></div>
         </div>
       </div>
@@ -865,15 +866,16 @@
 
   <script>
     // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
-    // GANTI URL INI DENGAN URL WEB APP ANDA!
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec';
-    
-    // Sheet names
-    const SHEETS = {
-        SISWA: 'siswa',
-        ABSENSI: 'absensi',
-        PELANGGARAN: 'pelanggaran',
-        NOTE: 'note'
+    // Gunakan URL yang sama dengan aplikasi siswa
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
+
+    // Sheet names (sama dengan aplikasi siswa)
+    const SHEET_NAMES = {
+        CONFIG: "CONFIG",
+        STUDENTS: "STUDENTS",
+        ATTENDANCE: "ATTENDANCE",
+        PELANGGARAN: "PELANGGARAN",
+        NOTES: "NOTES"
     };
 
     const GOOGLE_API_KEY = "AIzaSyBX70opf2IbxQ-5XD1qAj0FkXxKmJlH4Rk";
@@ -883,7 +885,7 @@
         HADIST: "1Pr6JQz-pacVeACXgSbygoSPTKJ2rJ9ilzth5TrKb-Zs"
     };
 
-    const SHEET_NAMES = {
+    const SHEET_NAMES_HAFALAN = {
         X: "X",
         XI: "XI",
         XII: "XII"
@@ -920,7 +922,7 @@
     // GET data dari Google Sheets via Apps Script
     async function fetchSheetData(sheetName) {
         try {
-            const url = `${APPS_SCRIPT_URL}?action=getAll&sheet=${sheetName}&t=${Date.now()}`;
+            const url = `${APPS_SCRIPT_URL}?action=get${sheetName}&t=${Date.now()}`;
             const response = await fetch(url);
             
             if (!response.ok) {
@@ -938,7 +940,6 @@
             }
         } catch (error) {
             console.error(`Error fetching ${sheetName}:`, error);
-            showToast(`Gagal memuat data: ${error.message}`, 'error');
             return [];
         }
     }
@@ -946,7 +947,26 @@
     // GET config dari Google Sheets
     async function fetchConfig() {
         try {
-            const url = `${APPS_SCRIPT_URL}?action=getConfig&t=${Date.now()}`;
+            const data = await fetchSheetData('CONFIG');
+            if (data && typeof data === 'object') {
+                return data;
+            }
+            return {};
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            return {};
+        }
+    }
+
+    // GET data dengan parameter
+    async function fetchSheetDataWithParams(sheetName, params = {}) {
+        try {
+            let url = `${APPS_SCRIPT_URL}?action=get${sheetName}`;
+            Object.keys(params).forEach(key => {
+                url += `&${key}=${encodeURIComponent(params[key])}`;
+            });
+            url += `&t=${Date.now()}`;
+            
             const response = await fetch(url);
             
             if (!response.ok) {
@@ -956,14 +976,14 @@
             const result = await response.json();
             
             if (result.success) {
-                return result.data || {};
+                return result.data || [];
             } else {
-                console.error('Error fetching config:', result.error);
-                return {};
+                console.error(`Error fetching ${sheetName}:`, result.error);
+                return [];
             }
         } catch (error) {
-            console.error('Error fetching config:', error);
-            return {};
+            console.error(`Error fetching ${sheetName}:`, error);
+            return [];
         }
     }
 
@@ -1136,7 +1156,7 @@
     }
 
     // ==================== FUNGSI GOOGLE SHEETS ====================
-    async function fetchSheetData2(sheetId, sheetName, range) {
+    async function fetchHafalanData(sheetId, sheetName, range) {
         try {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!${range}?key=${GOOGLE_API_KEY}`;
             const response = await fetch(url);
@@ -1164,12 +1184,12 @@
     }
 
     function getSheetNameByClass(kelas) {
-        if (!kelas) return SHEET_NAMES.X;
+        if (!kelas) return SHEET_NAMES_HAFALAN.X;
         const kelasUpper = kelas.toUpperCase().trim();
-        if (kelasUpper.startsWith('XII')) return SHEET_NAMES.XII;
-        if (kelasUpper.startsWith('XI')) return SHEET_NAMES.XI;
-        if (kelasUpper.startsWith('X')) return SHEET_NAMES.X;
-        return SHEET_NAMES.X;
+        if (kelasUpper.startsWith('XII')) return SHEET_NAMES_HAFALAN.XII;
+        if (kelasUpper.startsWith('XI')) return SHEET_NAMES_HAFALAN.XI;
+        if (kelasUpper.startsWith('X')) return SHEET_NAMES_HAFALAN.X;
+        return SHEET_NAMES_HAFALAN.X;
     }
 
     function processQuranData(row) {
@@ -1310,12 +1330,12 @@
             
             let quranData = [];
             try {
-                quranData = await fetchSheetData2(SHEET_IDS.QURAN, kelasSheet, "A6:AQ");
+                quranData = await fetchHafalanData(SHEET_IDS.QURAN, kelasSheet, "A6:AQ");
             } catch (error) {}
             
             let hadistData = [];
             try {
-                hadistData = await fetchSheetData2(SHEET_IDS.HADIST, kelasSheet, "A6:AQ");
+                hadistData = await fetchHafalanData(SHEET_IDS.HADIST, kelasSheet, "A6:AQ");
             } catch (error) {}
 
             document.getElementById('hafalanLoading').classList.add('hidden');
@@ -1355,12 +1375,66 @@
     // ==================== FUNGSI CATATAN SISWA ====================
     async function loadStudentNotes() {
         try {
-            const data = await fetchSheetData(SHEETS.NOTE);
-            studentNotes = data || [];
+            const data = await fetchSheetData('NOTES');
+            studentNotes = data && data.length > 1 ? arrayToObjects(data) : [];
         } catch (error) {
             console.error('Error loading notes:', error);
             studentNotes = [];
         }
+    }
+
+    function arrayToObjects(rows) {
+        if (!rows || rows.length < 2) return [];
+
+        const headers = rows[0];
+        const data = [];
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+
+            const obj = {};
+            headers.forEach((header, index) => {
+                if (header && header.trim()) {
+                    let value = row[index] || '';
+
+                    if (header === 'created_at' || header === 'timestamp' || header === 'updated_at') {
+                        if (value && !isNaN(value)) value = parseInt(value);
+                    } else if (header === 'poin' || header === 'distance') {
+                        if (value && !isNaN(value)) value = parseInt(value);
+                    } else if (header === 'lat' || header === 'lng' || header === 'accuracy') {
+                        if (value && !isNaN(value)) value = parseFloat(value);
+                    } else if (header === 'within_radius') {
+                        value = value === 'true' || value === 'TRUE' || value === '1';
+                    }
+
+                    obj[header.trim()] = value;
+                }
+            });
+
+            data.push(obj);
+        }
+
+        return data;
+    }
+
+    function objectsToArray(objects, headers) {
+        const rows = [headers];
+        
+        objects.forEach(obj => {
+            const row = headers.map(header => {
+                let value = obj[header] !== undefined ? obj[header] : '';
+                
+                if (header === 'location_lat' && obj.location) value = obj.location.lat || '';
+                if (header === 'location_lng' && obj.location) value = obj.location.lng || '';
+                if (header === 'location_accuracy' && obj.location) value = obj.location.accuracy || '';
+                
+                return value;
+            });
+            rows.push(row);
+        });
+        
+        return rows;
     }
 
     function renderStudentNote() {
@@ -1390,17 +1464,15 @@
         document.getElementById('pelanggaranLoading')?.classList.remove('hidden');
         
         try {
-            const data = await fetchSheetData(SHEETS.PELANGGARAN);
-            pelanggaranRecords = data || [];
+            const data = await fetchSheetDataWithParams('PELANGGARAN', { student_id: currentStudent.id });
+            pelanggaranRecords = data && data.length > 1 ? arrayToObjects(data) : [];
             
             document.getElementById('pelanggaranLoading')?.classList.add('hidden');
             
-            const siswaPelanggaran = pelanggaranRecords.filter(p => p.student_id === currentStudent.id);
-            
-            const totalPoin = siswaPelanggaran.reduce((sum, p) => sum + (parseInt(p.poin) || 0), 0);
+            const totalPoin = pelanggaranRecords.reduce((sum, p) => sum + (parseInt(p.poin) || 0), 0);
             document.getElementById('totalPoin').textContent = totalPoin;
             
-            renderPelanggaranList(siswaPelanggaran);
+            renderPelanggaranList(pelanggaranRecords);
             
         } catch (error) {
             console.error('Error loading pelanggaran:', error);
@@ -1456,12 +1528,12 @@
     async function loadData() {
         try {
             const [studentsData, attendanceData] = await Promise.all([
-                fetchSheetData(SHEETS.SISWA),
-                fetchSheetData(SHEETS.ABSENSI)
+                fetchSheetData('STUDENTS'),
+                fetchSheetData('ATTENDANCE')
             ]);
 
-            students = studentsData || [];
-            attendanceRecords = attendanceData || [];
+            students = studentsData && studentsData.length > 1 ? arrayToObjects(studentsData) : [];
+            attendanceRecords = attendanceData && attendanceData.length > 1 ? arrayToObjects(attendanceData) : [];
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             
@@ -1561,7 +1633,8 @@
         currentStudent = student;
         document.getElementById('studentName').textContent = student.nama;
         document.getElementById('studentClass').textContent = `${student.kelas} - ${student.jurusan}`;
-        document.getElementById('studentNis').textContent = `NIS: ${student.nis}`;
+        document.getElementById('studentNisValue').textContent = student.nis;
+        document.getElementById('studentIdValue').textContent = student.id || '-';
         
         await loadStudentPhoto(student.photo);
         await loadStudentNotes();
@@ -1641,12 +1714,7 @@
                 manual: 'fa-pen'
             };
 
-            let location = null;
-            try {
-                location = r.location ? JSON.parse(r.location) : null;
-            } catch (e) {}
-
-            const locationStatus = location ? getLocationStatus(location.lat, location.lng) : null;
+            const locationStatus = r.location ? getLocationStatus(r.location.lat, r.location.lng) : null;
 
             return `
                 <div class="bg-white rounded-2xl p-5 hover:shadow-xl transition border border-gray-100">
@@ -1668,19 +1736,19 @@
                             ${r.metode || 'manual'}
                         </span>
                         
-                        ${location ? `
+                        ${r.location ? `
                             <span class="location-badge ${locationStatus.class}">
                                 <i class="fas fa-map-pin mr-1"></i>${locationStatus.text}
                             </span>
                         ` : ''}
                     </div>
                     
-                    ${location ? `
+                    ${r.location ? `
                         <div class="location-info mt-3">
                             <div class="text-xs text-gray-600 flex items-center gap-2">
                                 <i class="fas fa-crosshairs text-[#d4af37]"></i>
-                                <span class="font-mono">${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}</span>
-                                <span class="bg-gray-200 px-2 py-1 rounded-full ml-auto">±${Math.round(location.accuracy)}m</span>
+                                <span class="font-mono">${r.location.lat.toFixed(6)}, ${r.location.lng.toFixed(6)}</span>
+                                <span class="bg-gray-200 px-2 py-1 rounded-full ml-auto">±${Math.round(r.location.accuracy)}m</span>
                             </div>
                         </div>
                     ` : ''}
